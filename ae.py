@@ -5,26 +5,26 @@ import torch.nn as nn
 ## Encoder
 class Encoder(nn.Module):
     """ TODO: add doc """
-    def __init__(self, arg):
+    def __init__(self):
         super(Encoder, self).__init__()
-        self.arg = arg
 
         # Block 1
-        self.max_pool_b1 = 'todo'
-        self.avg_pool_b1 = 'todo'
-        self.conv_b1 = 'todo'
+        self.max_pool_b1 = nn.MaxPool1d(kernel_size, stride=None, padding=0, dilation=1, return_indices=False, ceil_mode=False) # TODO: Tune params
+        self.avg_pool_b1 = nn.AvgPool1d(kernel_size, stride=None, padding=0, ceil_mode=False, count_include_pad=True) # TODO: Tune params
+        self.conv_b1 = nn.Conv1d(in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros', device=None, dtype=None) # TODO: Tune params
         
         # Block 2
-        self.max_pool_b2 = 'todo'
-        self.avg_pool_b2 = 'todo'
-        self.conv_b2 = 'todo'
+        self.max_pool_b2 = nn.MaxPool1d(kernel_size, stride=None, padding=0, dilation=1, return_indices=False, ceil_mode=False) # TODO: Tune params
+        self.avg_pool_b2 = nn.AvgPool1d(kernel_size, stride=None, padding=0, ceil_mode=False, count_include_pad=True) # TODO: Tune params
+        self.conv_b2 = nn.Conv1d(in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros', device=None, dtype=None) # TODO: Tune params
 
         # Block 3
-        self.conv_b3 = 'todo'
-        self.lp_pool_b3 = 'todo'
+        self.conv_b3 = nn.Conv1d(in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros', device=None, dtype=None) # TODO: Tune params
+
+        self.lp_pool_b3 = nn.LPPool1d(norm_type, kernel_size, stride=None, ceil_mode=False) # TODO: Tune params 
 
     """ TODO: add doc """
-    def forward(self, inputs):
+    def forward(self, x):
         pass
 
 
@@ -32,9 +32,8 @@ class Encoder(nn.Module):
 ## Decoder
 class Decoder(nn.Module):
     """ TODO: add doc """
-    def __init__(self, arg):
+    def __init__(self):
         super(Decoder, self).__init__()
-        self.arg = arg
 
         # Block 1
         self.up_b1 = 'todo'
@@ -52,7 +51,7 @@ class Decoder(nn.Module):
         self.conv2_b3 = 'todo'
 
     """ TODO: add doc """
-    def forward(self, inputs):
+    def forward(self, x):
         pass
 
 
@@ -68,9 +67,10 @@ class AutoEncoder(nn.Module):
         self.decoder = Decoder()
 
     """ TODO: add doc """
-    def forward(self, inputs):
+    def forward(self, x):
         # Encode
-        embedding = self.encoder(inputs)
+        embedding = self.encoder(x)
+        
         # Decode
         out = self.decoder(embedding)
 
