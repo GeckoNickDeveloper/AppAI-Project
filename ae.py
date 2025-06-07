@@ -36,19 +36,20 @@ class Decoder(nn.Module):
         super(Decoder, self).__init__()
 
         # Block 1
-        self.up_b1 = 'todo'
-        self.convt1_b1 = 'todo'
-        self.convt2_b1 = 'todo'
+        self.up_b1 = nn.Upsample(size=None, scale_factor=None, mode='nearest', align_corners=None, recompute_scale_factor=None)
+        self.convt1_b1 = nn.ConvTranspose1d(in_channels, out_channels, kernel_size, stride=1, padding=0, output_padding=0, groups=1, bias=True, dilation=1, padding_mode='zeros', device=None, dtype=None) # TODO: Tune params
+        self.convt2_b1 = nn.ConvTranspose1d(in_channels, out_channels, kernel_size, stride=1, padding=0, output_padding=0, groups=1, bias=True, dilation=1, padding_mode='zeros', device=None, dtype=None) # TODO: Tune params
 
         # Block 2
-        self.up_b2 = 'todo'
-        self.convt1_b2 = 'todo'
-        self.convt2_b2 = 'todo' 
+        self.up_b2 = nn.Upsample(size=None, scale_factor=None, mode='nearest', align_corners=None, recompute_scale_factor=None) # TODO: Tune params
+        self.convt1_b2 = nn.ConvTranspose1d(in_channels, out_channels, kernel_size, stride=1, padding=0, output_padding=0, groups=1, bias=True, dilation=1, padding_mode='zeros', device=None, dtype=None) # TODO: Tune params
+        self.convt2_b2 =  nn.ConvTranspose1d(in_channels, out_channels, kernel_size, stride=1, padding=0, output_padding=0, groups=1, bias=True, dilation=1, padding_mode='zeros', device=None, dtype=None) # TODO: Tune params
 
         # Block 3
-        self.embedding_up = 'todo'
-        self.conv1_b3 = 'todo'
-        self.conv2_b3 = 'todo'
+        self.embedding_up = nn.Upsample(size=None, scale_factor=None, mode='nearest', align_corners=None, recompute_scale_factor=None) # TODO: Tune params
+        self.conv1_b3 = nn.Conv1d(in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros', device=None, dtype=None) # TODO: Tune params
+
+        self.conv2_b3 = nn.Conv1d(in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros', device=None, dtype=None) # TODO: Tune params
 
     """ TODO: add doc """
     def forward(self, x):
