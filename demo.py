@@ -23,12 +23,13 @@ EPOCHS = 100
 BATCH_SIZE = 64
 
 ## Paths
-MODEL_FILENAME = f'models/AutoEncoder_e{EPOCHS}_bs{BATCH_SIZE}_seed{SEED}.pt'
+DATASET_PATH = f'datasets/UCI-HAR.npy'
+MODEL_PATH = f'models/AutoEncoder_e{EPOCHS}_bs{BATCH_SIZE}_seed{SEED}.pt'
 
 
 
 # Dataset
-dataset = utils.HARDataset('todo.path')
+dataset = utils.HARDataset(DATASET_PATH)
 
 ## Train/Test Split
 train_size = int(TRAIN_SIZE * len(dataset))
@@ -65,12 +66,13 @@ for i in range(EPOCHS):
     print(f'Epoch [{i+1}/{EPOCHS}] - Train: {train_loss} - Eval: {eval_loss}')
 
 
+
 # Model files
 ## Save model
-torch.save(model, MODEL_FILENAME)
+torch.save(model, MODEL_PATH)
 
 ## Load model
-model = torch.load(MODEL_FILENAME)
+model = torch.load(MODEL_PATH)
 
 # Evaluate model
 eval_loss = utils.evaluate(model, test_loader, criterion, device)
