@@ -24,6 +24,7 @@ MODEL_FILENAME = f'models/AutoEncoder_e{EPOCHS}_bs{BATCH_SIZE}_seed{SEED}.pt'
 # Load dataset
 # TODO: Import data
 
+
 # Setup model, criterion and optimizer
 ## Device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -48,6 +49,14 @@ for i in range(EPOCHS):
     print(f'Epoch [{i+1}/{EPOCHS}] - Train: {train_loss} - Eval: {eval_loss}')
 
 
-
+# Model files
 ## Save model
-torch.save(model.state_dict(), MODEL_FILENAME)
+torch.save(model, MODEL_FILENAME)
+
+## Load model
+model = torch.load(MODEL_FILENAME)
+
+# Evaluate model
+eval_loss = utils.evaluate(model, test_loader, criterion, device)
+print(f'Eval: {eval_loss}')
+
