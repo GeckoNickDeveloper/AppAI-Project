@@ -25,7 +25,26 @@ class Encoder(nn.Module):
 
     """ TODO: add doc """
     def forward(self, x):
-        pass
+        # Block 1
+        mp_b1 = self.max_pool_b1(x)
+        ap_b1 = self.avg_pool_b1(x)
+        conv_b1 = self.conv_b1(x)
+
+        concat_b1 = torch.cat([mp_b1, conv_b1, ap_b1], dim=1)
+
+        # Block 2
+        mp_b2 = self.max_pool_b1(concat_b1)
+        ap_b2 = self.avg_pool_b1(concat_b1)
+        conv_b2 = self.conv_b1(concat_b1)
+
+        concat_b2 = torch.cat([mp_b2, conv_b2, ap_b2], dim=1)
+
+        # Block 3
+        conv_b3 = self.conv_b3(concat_b2)
+        lppool_b3 = self.lp_pool_b3(conv_b3)
+
+        return lp_pool_b3
+
 
 
 
@@ -53,7 +72,35 @@ class Decoder(nn.Module):
 
     """ TODO: add doc """
     def forward(self, x):
-        pass
+        # Block 1
+        up_b1 = self.up_b1(x)
+        ct1_b1 = self.convt1_b1(x)
+        ct2_b1 = self.convt2_b1(ct1_b1)
+
+        concat_b1 = torch.cat([up_b1, ct2_b1], dim=1)
+
+        # Block 2
+        up_b2 = self.up_b1(x)
+        ct1_b2 = self.convt1_b2(x)
+        ct2_b2 = self.convt2_b2(ct1_b2)
+
+        concat_b2 = torch.cat([up_b2, ct2_b2], dim=1) 
+
+        # Block 3
+        ## Embedding long dependency
+        embed_up = self.embedding_up(x)
+        
+        ## Decoder terminal
+        c1_b3 = self.conv1_b3(concat_b2)
+
+        ## Combine upscaled embeding and decoders
+        add_b3 = c1_b3 + embed_up
+
+        ## Transform data 
+        c2_b3 = self.conv2_b3(add_b3)
+
+        return c2_b3
+
 
 
 
