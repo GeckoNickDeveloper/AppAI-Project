@@ -4,8 +4,21 @@ import torch.nn as nn
 import torch.utils.data as td
 
 # Custom data loader
+class HARDataset(td.Dataset):
+    """
+        TODO: doc
+    """
+    def __init__(self, path):
+        pass
 
+    def __len__(self):
+        return len(self.data)
 
+    def __getitem__(self, idx):
+        x = self.data[idx]
+        y = self.labels[idx]
+
+        return x, y
 
 
 # Utility functions

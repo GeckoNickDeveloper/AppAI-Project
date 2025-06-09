@@ -4,8 +4,11 @@ import torch.nn as nn
 # Network definition
 ## Encoder
 class Encoder(nn.Module):
-    """ TODO: add doc """
     def __init__(self):
+        """
+            TODO: doc
+        """
+
         super(Encoder, self).__init__()
 
         # Block 1
@@ -23,7 +26,6 @@ class Encoder(nn.Module):
 
         self.lp_pool_b3 = nn.LPPool1d(norm_type, kernel_size, stride=None, ceil_mode=False) # TODO: Tune params 
 
-    """ TODO: add doc """
     def forward(self, x):
         # Block 1
         mp_b1 = self.max_pool_b1(x)
@@ -50,8 +52,10 @@ class Encoder(nn.Module):
 
 ## Decoder
 class Decoder(nn.Module):
-    """ TODO: add doc """
     def __init__(self):
+        """
+            TODO: doc
+        """
         super(Decoder, self).__init__()
 
         # Block 1
@@ -70,7 +74,6 @@ class Decoder(nn.Module):
 
         self.conv2_b3 = nn.Conv1d(in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros', device=None, dtype=None) # TODO: Tune params
 
-    """ TODO: add doc """
     def forward(self, x):
         # Block 1
         up_b1 = self.up_b1(x)
@@ -106,7 +109,9 @@ class Decoder(nn.Module):
 
 ## AutoEncoder
 class AutoEncoder(nn.Module):
-    """ TODO: add doc """
+    """
+        TODO: doc
+    """
     def __init__(self):
         super(AutoEncoder, self).__init__()
         
@@ -114,7 +119,6 @@ class AutoEncoder(nn.Module):
         self.encoder = Encoder()
         self.decoder = Decoder()
 
-    """ TODO: add doc """
     def forward(self, x):
         # Encode
         embedding = self.encoder(x)
