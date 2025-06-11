@@ -68,7 +68,7 @@ class Encoder(nn.Module):
         self.avg_pool_b1 = nn.AvgPool1d(
                 self.config['poolings']['avg-pool']['kernels'][0],
                 stride = self.config['poolings']['avg-pool']['kernels'][0],
-                padding = 0) # TODO: Tune params
+                padding = 0)
         
         self.conv_b1 = nn.Conv1d(
                 self.config['convolutions']['in-channels'][0],
@@ -76,7 +76,7 @@ class Encoder(nn.Module):
                 self.config['convolutions']['kernels'][0],
                 stride = self.config['convolutions']['strides'][0],
                 padding = 'same',
-                padding_mode = 'reflect') # TODO: Tune params
+                padding_mode = 'reflect')
         
 
 
@@ -143,42 +143,127 @@ class Encoder(nn.Module):
 
 ## Decoder
 class Decoder(nn.Module):
-    def __init__(self):
-        """
-            TODO: doc
-        """
+    def __init__(self, in_channels):
         super(Decoder, self).__init__()
 
+        self.config = {
+            'deconvolutions': {
+                'in-channels': [
+                    in_channels,
+                    in_channels + 16,
+                ],
+                'out-channels': [
+                    16,
+                    32,
+                ],
+                'kernels': [
+                    4,
+                    2,
+                ],
+                'strides': [
+                    4,
+                    2,
+                ]
+            },
+
+            'convolutions': {
+                'in-channels': [
+                    in_channels + 16 + 32,
+                    in_channels,
+                ],
+                'out-channels': [
+                    in_channels,
+                    in_channels,
+                ],
+                'kernels': [
+                    3,
+                    5,
+                ],
+                'strides': [
+                    1,
+                    1,
+                ]
+
+            },
+            
+            'upsamples': {
+                'scale-factors': [
+                    4,
+                    5,
+                    20
+                ]
+            }
+        }
+
+
+
         # Block 1
-        self.up_b1 = nn.Upsample(size=None, scale_factor=None, mode='nearest', align_corners=None, recompute_scale_factor=None)
-        self.convt1_b1 = nn.ConvTranspose1d(in_channels, out_channels, kernel_size, stride=1, padding=0, output_padding=0, groups=1, bias=True, dilation=1, padding_mode='zeros', device=None, dtype=None) # TODO: Tune params
-        self.convt2_b1 = nn.ConvTranspose1d(in_channels, out_channels, kernel_size, stride=1, padding=0, output_padding=0, groups=1, bias=True, dilation=1, padding_mode='zeros', device=None, dtype=None) # TODO: Tune params
+        self.up_b1 = nn.Upsample(
+                scale_factor = self.config['upsamples']['scale-factors'][0],
+                mode = 'linear')
+
+        self.convt1_b1 = nn.ConvTranspose1d(
+                self.config['deconvolutions']['in-channels'][0],
+                self.config['deconvolutions']['out-channels'][0],
+                self.config['deconvolutions']['kernels'][0],
+                stride = self.config['deconvolutions']['strides'][0],
+                padding = 0,
+                output_padding = 0,
+                padding_mode = 'zeros') # TODO: Tune params
+        
+
 
         # Block 2
-        self.up_b2 = nn.Upsample(size=None, scale_factor=None, mode='nearest', align_corners=None, recompute_scale_factor=None) # TODO: Tune params
-        self.convt1_b2 = nn.ConvTranspose1d(in_channels, out_channels, kernel_size, stride=1, padding=0, output_padding=0, groups=1, bias=True, dilation=1, padding_mode='zeros', device=None, dtype=None) # TODO: Tune params
-        self.convt2_b2 =  nn.ConvTranspose1d(in_channels, out_channels, kernel_size, stride=1, padding=0, output_padding=0, groups=1, bias=True, dilation=1, padding_mode='zeros', device=None, dtype=None) # TODO: Tune params
+        self.up_b2 = nn.Upsample(
+                scale_factor = self.config['upsamples']['scale-factors'][1],
+                mode = 'linear')
+        
+        self.convt1_b2 = nn.ConvTranspose1d(
+                self.config['deconvolutions']['in-channels'][1],
+                self.config['deconvolutions']['out-channels'][1],
+                self.config['deconvolutions']['kernels'][1],
+                stride = self.config['deconvolutions']['strides'][1],
+                padding = 0,
+                output_padding = 0,
+                padding_mode = 'zeros') # TODO: Tune params
+        
+
 
         # Block 3
-        self.embedding_up = nn.Upsample(size=None, scale_factor=None, mode='nearest', align_corners=None, recompute_scale_factor=None) # TODO: Tune params
-        self.conv1_b3 = nn.Conv1d(in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros', device=None, dtype=None) # TODO: Tune params
+        self.embedding_up = nn.Upsample(
+                scale_factor = self.config['upsamples']['scale-factors'][2],
+                mode = 'linear')
+        
+        self.conv1_b3 = nn.Conv1d(
+                self.config['convolutions']['in-channels'][0],
+                self.config['convolutions']['out-channels'][0],
+                self.config['convolutions']['kernels'][0],
+                stride = self.config['convolutions']['strides'][0],
+                padding = 0,
+                padding_mode = 'zeros') # TODO: Tune params
 
-        self.conv2_b3 = nn.Conv1d(in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros', device=None, dtype=None) # TODO: Tune params
+        self.conv2_b3 = nn.Conv1d(
+                self.config['convolutions']['in-channels'][1],
+                self.config['convolutions']['out-channels'][1],
+                self.config['convolutions']['kernels'][1],
+                stride = self.config['convolutions']['strides'][1],
+                padding = 0,
+                padding_mode = 'zeros') # TODO: Tune params
+
+
 
     def forward(self, x):
         # Block 1
         up_b1 = self.up_b1(x)
         ct1_b1 = self.convt1_b1(x)
-        ct2_b1 = self.convt2_b1(ct1_b1)
 
-        concat_b1 = torch.cat([up_b1, ct2_b1], dim=1)
+        concat_b1 = torch.cat([up_b1, ct1_b1], dim=1)
 
         # Block 2
-        up_b2 = self.up_b1(x)
-        ct1_b2 = self.convt1_b2(x)
-        ct2_b2 = self.convt2_b2(ct1_b2)
+        up_b2 = self.up_b1(concat_b1)
+        ct1_b2 = self.convt1_b2(concat_b2)
 
-        concat_b2 = torch.cat([up_b2, ct2_b2], dim=1) 
+        concat_b2 = torch.cat([up_b2, ct1_b2], dim=1) 
 
         # Block 3
         ## Embedding long dependency
@@ -200,9 +285,6 @@ class Decoder(nn.Module):
 
 ## AutoEncoder
 class AutoEncoder(nn.Module):
-    """
-        TODO: doc
-    """
     def __init__(self):
         super(AutoEncoder, self).__init__()
         
