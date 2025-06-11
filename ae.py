@@ -4,27 +4,118 @@ import torch.nn as nn
 # Network definition
 ## Encoder
 class Encoder(nn.Module):
-    def __init__(self):
-        """
-            TODO: doc
-        """
-
+    def __init__(self, in_channels):
         super(Encoder, self).__init__()
 
+        self.config = {
+            'convolutions': {    
+                'in-channels': [
+                    in_channels,
+                    in_channels * 2 + 16,
+                    (in_channels * 2 + 16) * 2 + 32
+                ],
+                'out-channels': [
+                    16,
+                    32,
+                    in_channels
+                ],
+                'kernels': [
+                    7,
+                    3,
+                    1
+                ],
+                'strides': [
+                    2,
+                    2,
+                    1
+                ]
+            },
+            'poolings': {
+                'max-pool': {
+                    'kernels': [
+                        7,
+                        3
+                    ],
+                    'strides': [
+                        2,
+                        2
+                    ]
+                },
+                'avg-pool': {
+                    'kernels': [
+                        7,
+                        3
+                    ],
+                    'strides': [
+                        2,
+                        2
+                    ]
+                },
+                'lp-pool': {
+                    'p': 5,
+                    'kernel': 3,
+                    'stride': 5
+                },
+            }
+        }
+
         # Block 1
-        self.max_pool_b1 = nn.MaxPool1d(kernel_size, stride=None, padding=0, dilation=1, return_indices=False, ceil_mode=False) # TODO: Tune params
-        self.avg_pool_b1 = nn.AvgPool1d(kernel_size, stride=None, padding=0, ceil_mode=False, count_include_pad=True) # TODO: Tune params
-        self.conv_b1 = nn.Conv1d(in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros', device=None, dtype=None) # TODO: Tune params
+        self.max_pool_b1 = nn.MaxPool1d(
+                self.config['poolings']['max-pool']['kernels'][0],
+                stride = self.config['poolings']['max-pool']['kernels'][0],
+                padding = 0)
+
+        self.avg_pool_b1 = nn.AvgPool1d(
+                self.config['poolings']['avg-pool']['kernels'][0],
+                stride = self.config['poolings']['avg-pool']['kernels'][0],
+                padding = 0) # TODO: Tune params
         
+        self.conv_b1 = nn.Conv1d(
+                self.config['convolutions']['in-channels'][0],
+                self.config['convolutions']['out-channels'][0]
+                self.config['convolutions']['kernels'][0],
+                stride = self.config['convolutions']['strides'][0],
+                padding = 'same',
+                padding_mode = 'reflect') # TODO: Tune params
+        
+
+
         # Block 2
-        self.max_pool_b2 = nn.MaxPool1d(kernel_size, stride=None, padding=0, dilation=1, return_indices=False, ceil_mode=False) # TODO: Tune params
-        self.avg_pool_b2 = nn.AvgPool1d(kernel_size, stride=None, padding=0, ceil_mode=False, count_include_pad=True) # TODO: Tune params
-        self.conv_b2 = nn.Conv1d(in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros', device=None, dtype=None) # TODO: Tune params
+        self.max_pool_b2 = nn.MaxPool1d(
+                self.config['poolings']['max-pool']['kernels'][1],
+                stride = self.config['poolings']['max-pool']['kernels'][1],
+                padding = 0)
+        
+        self.avg_pool_b2 = nn.AvgPool1d(
+                self.config['poolings']['avg-pool']['kernels'][1],
+                stride = self.config['poolings']['avg-pool']['kernels'][1],
+                padding = 0)
+        
+        self.conv_b2 = nn.Conv1d(
+                self.config['convolutions']['in-channels'][1],
+                self.config['convolutions']['out-channels'][1]
+                self.config['convolutions']['kernels'][1],
+                stride = self.config['convolutions']['strides'][1],
+                padding = 'same',
+                padding_mode = 'reflect')
+
+
 
         # Block 3
-        self.conv_b3 = nn.Conv1d(in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros', device=None, dtype=None) # TODO: Tune params
+        self.conv_b3 = nn.Conv1d(
+                self.config['convolutions']['in-channels'][2],
+                self.config['convolutions']['out-channels'][2]
+                self.config['convolutions']['kernels'][2],
+                stride = self.config['convolutions']['strides'][2],
+                padding = 'same',
+                padding_mode = 'reflect')
 
-        self.lp_pool_b3 = nn.LPPool1d(norm_type, kernel_size, stride=None, ceil_mode=False) # TODO: Tune params 
+        self.lp_pool_b3 = nn.LPPool1d(
+                self.config['poolings']['lp-pool']['p'],
+                self.config['poolings']['lp-pool']['kernel'],
+                stride = self.config['poolings']['lp-pool']['stride'])
+
+
 
     def forward(self, x):
         # Block 1
