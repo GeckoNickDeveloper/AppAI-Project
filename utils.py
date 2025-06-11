@@ -90,19 +90,27 @@ def train(model, dataloader, criterion, optimizer, device):
         inputs = inputs.to(device)
         labels = labels.to(device)
         
+        # print(inputs.size())
+        # print(labels.size())
+
         optimizer.zero_grad()
 
         outputs = model(inputs)
 
         loss = criterion(outputs, labels)
+
+        # with torch.autograd.set_detect_anomaly(True):
+            # loss.backward()
+
         loss.backward()
+        # print(loss)
 
         optimizer.step()
 
         run_loss += loss.item() * inputs.size(0)
 
         # Progress Bar
-        utils.progress_bar(current_batch, batches, )
+        progress_bar(current_batch, batches, )
         current_batch += 1
 
     return run_loss / len(dataloader.dataset)
@@ -127,7 +135,7 @@ def evaluate(model, dataloader, criterion, device):
             run_loss += loss.item() * inputs.size(0)
 
             # Progress Bar
-            utils.progress_bar(current_batch, batches, )
+            progress_bar(current_batch, batches, )
             current_batch += 1
 
 

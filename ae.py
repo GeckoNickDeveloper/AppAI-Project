@@ -149,7 +149,7 @@ class Encoder(nn.Module):
         )
         # print(x.size())
         
-        print('======================================== ENCODER')
+        # print('======================================== ENCODER')
 
         # Block 1
         mp_b1 = self.max_pool_b1(x)
@@ -193,6 +193,9 @@ class Encoder(nn.Module):
         conv_b3 = self.conv_b3(concat_b2)
         lp_b3 = self.lp_pool_b3(conv_b3)
 
+        # print(conv_b3.size())
+        # print(lp_b3.size())
+
         return lp_b3
 
 
@@ -215,11 +218,11 @@ class Decoder(nn.Module):
                 ],
                 'kernels': [
                     4,
-                    2,
+                    5,
                 ],
                 'strides': [
                     4,
-                    2,
+                    5,
                 ]
             },
 
@@ -309,20 +312,49 @@ class Decoder(nn.Module):
 
 
 
+    def __pad(self, x, kernel, stride):
+        L_in = x.size(-1)
+
+        # Compute the total padding needed to ensure "same" output length
+        L_out = math.ceil(L_in / stride)
+        pad_needed = max(0, (L_out - 1) * stride + kernel - L_in)
+
+        pad_left = pad_needed // 2
+        pad_right = pad_needed - pad_left
+
+        return F.pad(x, (pad_left, pad_right))
+
+
+
     def forward(self, x):
-        print('======================================== DECODER')
+        # print('======================================== DECODER')
 
         # Block 1
         up_b1 = self.up_b1(x)
         ct1_b1 = self.convt1_b1(x)
 
+        # print(up_b1.size())
+        # print(ct1_b1.size())
+
         concat_b1 = torch.cat([up_b1, ct1_b1], dim=1)
+        # print(concat_b1.size())
+        # print('===============')
 
         # Block 2
-        up_b2 = self.up_b1(concat_b1)
+        up_b2 = self.up_b2(concat_b1)
         ct1_b2 = self.convt1_b2(concat_b1)
 
+        # print(up_b2.size())
+        # print(ct1_b2.size())
+
         concat_b2 = torch.cat([up_b2, ct1_b2], dim=1) 
+        # print(concat_b2.size())
+        concat_b2 = self.__pad(
+            concat_b2,
+            self.config['convolutions']['kernels'][0],
+            self.config['convolutions']['strides'][0]
+        )
+        # print('===============')
 
         # Block 3
         ## Embedding long dependency
@@ -333,6 +365,11 @@ class Decoder(nn.Module):
 
         ## Combine upscaled embeding and decoders
         add_b3 = c1_b3 + embed_up
+        add_b3 = self.__pad(
+            add_b3,
+            self.config['convolutions']['kernels'][1],
+            self.config['convolutions']['strides'][1]
+        )
 
         ## Transform data 
         c2_b3 = self.conv2_b3(add_b3)
