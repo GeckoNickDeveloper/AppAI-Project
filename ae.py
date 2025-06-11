@@ -1,5 +1,11 @@
 # Imports
+import torch
 import torch.nn as nn
+import torch.nn.functional as F
+
+import math
+
+
 
 # Network definition
 ## Encoder
@@ -11,8 +17,8 @@ class Encoder(nn.Module):
             'convolutions': {    
                 'in-channels': [
                     in_channels,
-                    in_channels * 2 + 16,
-                    (in_channels * 2 + 16) * 2 + 32
+                    (in_channels * 2 + 16),
+                    ((in_channels * 2 + 16) * 2 + 32)
                 ],
                 'out-channels': [
                     16,
@@ -59,84 +65,135 @@ class Encoder(nn.Module):
             }
         }
 
+        # print('CONFIG ==================================')
+        # print(self.config)
+
         # Block 1
         self.max_pool_b1 = nn.MaxPool1d(
                 self.config['poolings']['max-pool']['kernels'][0],
-                stride = self.config['poolings']['max-pool']['kernels'][0],
+                stride = self.config['poolings']['max-pool']['strides'][0],
                 padding = 0)
 
         self.avg_pool_b1 = nn.AvgPool1d(
                 self.config['poolings']['avg-pool']['kernels'][0],
-                stride = self.config['poolings']['avg-pool']['kernels'][0],
+                stride = self.config['poolings']['avg-pool']['strides'][0],
                 padding = 0)
         
         self.conv_b1 = nn.Conv1d(
                 self.config['convolutions']['in-channels'][0],
-                self.config['convolutions']['out-channels'][0]
+                self.config['convolutions']['out-channels'][0],
                 self.config['convolutions']['kernels'][0],
-                stride = self.config['convolutions']['strides'][0],
-                padding = 'same',
-                padding_mode = 'reflect')
+                stride = self.config['convolutions']['strides'][0])
+                # padding = 'same',
+                # padding_mode = 'reflect')
         
 
 
         # Block 2
         self.max_pool_b2 = nn.MaxPool1d(
                 self.config['poolings']['max-pool']['kernels'][1],
-                stride = self.config['poolings']['max-pool']['kernels'][1],
+                stride = self.config['poolings']['max-pool']['strides'][1],
                 padding = 0)
         
         self.avg_pool_b2 = nn.AvgPool1d(
                 self.config['poolings']['avg-pool']['kernels'][1],
-                stride = self.config['poolings']['avg-pool']['kernels'][1],
+                stride = self.config['poolings']['avg-pool']['strides'][1],
                 padding = 0)
         
         self.conv_b2 = nn.Conv1d(
                 self.config['convolutions']['in-channels'][1],
-                self.config['convolutions']['out-channels'][1]
+                self.config['convolutions']['out-channels'][1],
                 self.config['convolutions']['kernels'][1],
-                stride = self.config['convolutions']['strides'][1],
-                padding = 'same',
-                padding_mode = 'reflect')
+                stride = self.config['convolutions']['strides'][1])
+                #padding = 'same',
+                #padding_mode = 'reflect')
 
 
 
         # Block 3
         self.conv_b3 = nn.Conv1d(
                 self.config['convolutions']['in-channels'][2],
-                self.config['convolutions']['out-channels'][2]
+                self.config['convolutions']['out-channels'][2],
                 self.config['convolutions']['kernels'][2],
-                stride = self.config['convolutions']['strides'][2],
-                padding = 'same',
-                padding_mode = 'reflect')
+                stride = self.config['convolutions']['strides'][2])
+                # padding = 'same',
+                # padding_mode = 'reflect')
 
         self.lp_pool_b3 = nn.LPPool1d(
                 self.config['poolings']['lp-pool']['p'],
                 self.config['poolings']['lp-pool']['kernel'],
                 stride = self.config['poolings']['lp-pool']['stride'])
+    
+
+
+    def __pad(self, x, kernel, stride):
+        L_in = x.size(-1)
+
+        # Compute the total padding needed to ensure "same" output length
+        L_out = math.ceil(L_in / stride)
+        pad_needed = max(0, (L_out - 1) * stride + kernel - L_in)
+
+        pad_left = pad_needed // 2
+        pad_right = pad_needed - pad_left
+
+        return F.pad(x, (pad_left, pad_right))
 
 
 
     def forward(self, x):
+        # Padding X (padding same but usable for strided)
+        x = self.__pad(
+            x,
+            self.config['convolutions']['kernels'][0],
+            self.config['convolutions']['strides'][0],
+        )
+        # print(x.size())
+        
+        print('======================================== ENCODER')
+
         # Block 1
         mp_b1 = self.max_pool_b1(x)
         ap_b1 = self.avg_pool_b1(x)
         conv_b1 = self.conv_b1(x)
-
+      
+        # print('============================')
+        # print(mp_b1.size())
+        # print(conv_b1.size())
+        # print(ap_b1.size())
+        
+        # Concatenate then pad
         concat_b1 = torch.cat([mp_b1, conv_b1, ap_b1], dim=1)
+        # print(concat_b1.size())
+        concat_b1 = self.__pad(
+            concat_b1,
+            self.config['convolutions']['kernels'][1],
+            self.config['convolutions']['strides'][1],
+        )
 
         # Block 2
-        mp_b2 = self.max_pool_b1(concat_b1)
-        ap_b2 = self.avg_pool_b1(concat_b1)
-        conv_b2 = self.conv_b1(concat_b1)
+        mp_b2 = self.max_pool_b2(concat_b1)
+        ap_b2 = self.avg_pool_b2(concat_b1)
+        conv_b2 = self.conv_b2(concat_b1)
 
+        # print('============================')
+        # print(mp_b1.size())
+        # print(conv_b1.size())
+        # print(ap_b1.size()) 
+
+        # Concatenate then pad
         concat_b2 = torch.cat([mp_b2, conv_b2, ap_b2], dim=1)
+        # print(concat_b2.size())
+        concat_b2 = self.__pad(
+            concat_b2,
+            self.config['convolutions']['kernels'][2],
+            self.config['convolutions']['strides'][2],
+        )
 
         # Block 3
         conv_b3 = self.conv_b3(concat_b2)
-        lppool_b3 = self.lp_pool_b3(conv_b3)
+        lp_b3 = self.lp_pool_b3(conv_b3)
 
-        return lp_pool_b3
+        return lp_b3
 
 
 
@@ -253,6 +310,8 @@ class Decoder(nn.Module):
 
 
     def forward(self, x):
+        print('======================================== DECODER')
+
         # Block 1
         up_b1 = self.up_b1(x)
         ct1_b1 = self.convt1_b1(x)
@@ -261,7 +320,7 @@ class Decoder(nn.Module):
 
         # Block 2
         up_b2 = self.up_b1(concat_b1)
-        ct1_b2 = self.convt1_b2(concat_b2)
+        ct1_b2 = self.convt1_b2(concat_b1)
 
         concat_b2 = torch.cat([up_b2, ct1_b2], dim=1) 
 
@@ -285,12 +344,12 @@ class Decoder(nn.Module):
 
 ## AutoEncoder
 class AutoEncoder(nn.Module):
-    def __init__(self):
+    def __init__(self, in_channels):
         super(AutoEncoder, self).__init__()
         
         # Components
-        self.encoder = Encoder()
-        self.decoder = Decoder()
+        self.encoder = Encoder(in_channels)
+        self.decoder = Decoder(in_channels)
 
     def forward(self, x):
         # Encode

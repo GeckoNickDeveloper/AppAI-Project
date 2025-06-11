@@ -3,25 +3,58 @@ import torch
 import torch.nn as nn
 import torch.utils.data as td
 
+import numpy as np
+
 # Custom data loader
-class HARDataset(td.Dataset):
-    """
-        TODO: doc
-    """
-    def __init__(self, path):
-        pass
+class UciDataset(td.Dataset):
+    def __init__(self, size, overlap):
+        db = np.load('datasets/UCI-HAR.npy')        
+        
+        self.data = create_windows(db, size, 6, overlap)
+        print(self.data.shape)
 
     def __len__(self):
         return len(self.data)
 
-    def __getitem__(self, idx):
-        x = self.data[idx]
-        y = self.labels[idx]
+    def __getitem__(self, idx): 
+        x_raw = self.data[idx]
+
+        x = torch.tensor(x_raw).T.float()
+        y = x.clone()
 
         return x, y
 
 
+
 # Utility functions
+## Windows
+def create_windows(db, size, delimiter, overlap = 0.0):
+    windows = []
+
+    # Iteration step 
+    step = size - int(size * overlap)
+    i = 0
+    total_db_len = len(db)
+    
+    print('[create_windows] Started')
+
+    # Loop data
+    while (i + size) < total_db_len:
+        # Get data
+        curr = np.array(
+            db[i:(i + size), :delimiter]
+        )
+        
+        # Push to output
+        windows.append(curr)
+
+        # Step to next window
+        i += step
+
+    print('[create_windows] Terminated successfully')
+    
+    return np.array(windows)
+
 ## Progress Bar
 def progress_bar(iteration, total, prefix = '', suffix = '', decimals = 1, length = 80, fill = '=', to_fill = ' ', end = '\r'):
     # Defualt prefix

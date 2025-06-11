@@ -18,18 +18,20 @@ TRAIN_SIZE = 0.8
 ## Model
 INPUTS_SHAPE = (6, 3000) # 1m at 50Hz (6 channels data)
 
+## Dataset
+OVERLAP = 0.5
+
 ## Training
 EPOCHS = 100
 BATCH_SIZE = 64
 
 ## Paths
-DATASET_PATH = f'datasets/UCI-HAR.npy'
 MODEL_PATH = f'models/AutoEncoder_e{EPOCHS}_bs{BATCH_SIZE}_seed{SEED}.pt'
 
 
 
 # Dataset
-dataset = utils.HARDataset(DATASET_PATH)
+dataset = utils.UciDataset(INPUTS_SHAPE[1], OVERLAP)
 
 ## Train/Test Split
 train_size = int(TRAIN_SIZE * len(dataset))
@@ -48,7 +50,7 @@ test_loader = td.DataLoader(test_set, batch_size = BATCH_SIZE, shuffle = False)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 ## Model
-model = ae.AutoEncoder().to(device)
+model = ae.AutoEncoder(INPUTS_SHAPE[0]).to(device)
 
 ## Criterion
 # criterion = nn.L1Loss() # MAE
