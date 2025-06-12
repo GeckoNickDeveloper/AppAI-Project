@@ -90,12 +90,15 @@ def train(model, dataloader, criterion, optimizer, device):
         inputs = inputs.to(device)
         labels = labels.to(device)
         
-        # print(inputs.size())
-        # print(labels.size())
+        # print(inputs[0])
+        # print(labels[0])
+        # 1/0
 
         optimizer.zero_grad()
 
         outputs = model(inputs)
+        # print(outputs.size())
+        # print(outputs - inputs)
 
         loss = criterion(outputs, labels)
 
@@ -103,7 +106,7 @@ def train(model, dataloader, criterion, optimizer, device):
             # loss.backward()
 
         loss.backward()
-        # print(loss)
+        nn.utils.clip_grad_norm_(model.parameters(), max_norm = 1.0)
 
         optimizer.step()
 

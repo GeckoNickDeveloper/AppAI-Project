@@ -5,6 +5,8 @@ import torch.utils.data as td
 
 import numpy as np
 
+import matplotlib.pyplot as plt
+
 import ae
 import utils
 
@@ -16,13 +18,13 @@ SEED = 42069
 TRAIN_SIZE = 0.8
 
 ## Model
-INPUTS_SHAPE = (6, 300) # 1m at 50Hz (6 channels data)
+INPUTS_SHAPE = (6, 100) # 2s at 50Hz (6 channels data)
 
 ## Dataset
-OVERLAP = 0.5
+OVERLAP = 0.0
 
 ## Training
-EPOCHS = 1
+EPOCHS = 50
 BATCH_SIZE = 64
 
 ## Paths
@@ -79,4 +81,34 @@ model = torch.load(MODEL_PATH, weights_only = False)
 # Evaluate model
 eval_loss = utils.evaluate(model, test_loader, criterion, device)
 print(f'Eval: {eval_loss}')
+
+
+
+# Plot a random window
+batch = next(iter(test_loader))
+x, _ = batch
+x = x.to(device)
+model.eval()
+with torch.no_grad():
+    xp = model(x)
+
+
+fig, ax = plt.subplots(2, figsize=(10, 8))
+
+ax[0].plot(x[0].T[:,:3], label='True')
+ax[0].grid()
+
+ax[1].plot(xp[0].T[:,:3], label='Pred')
+ax[1].grid()
+
+fig.legend()
+plt.show()
+
+
+
+
+
+
+
+
 

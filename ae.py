@@ -58,7 +58,7 @@ class Encoder(nn.Module):
                     ]
                 },
                 'lp-pool': {
-                    'p': 5,
+                    'p': 7,
                     'kernel': 3,
                     'stride': 5
                 },
@@ -123,6 +123,9 @@ class Encoder(nn.Module):
                 self.config['poolings']['lp-pool']['p'],
                 self.config['poolings']['lp-pool']['kernel'],
                 stride = self.config['poolings']['lp-pool']['stride'])
+
+        # Auxiliary
+        self.relu = nn.ReLU()
     
 
 
@@ -155,6 +158,7 @@ class Encoder(nn.Module):
         mp_b1 = self.max_pool_b1(x)
         ap_b1 = self.avg_pool_b1(x)
         conv_b1 = self.conv_b1(x)
+        conv_b1 = self.relu(conv_b1)
       
         # print('============================')
         # print(mp_b1.size())
@@ -174,6 +178,7 @@ class Encoder(nn.Module):
         mp_b2 = self.max_pool_b2(concat_b1)
         ap_b2 = self.avg_pool_b2(concat_b1)
         conv_b2 = self.conv_b2(concat_b1)
+        conv_b2 = self.relu(conv_b2)
 
         # print('============================')
         # print(mp_b1.size())
@@ -191,7 +196,10 @@ class Encoder(nn.Module):
 
         # Block 3
         conv_b3 = self.conv_b3(concat_b2)
+        conv_b3 = self.relu(conv_b3)
         lp_b3 = self.lp_pool_b3(conv_b3)
+
+        # print("Before LP Pool", conv_b3.min().item(), conv_b3.max().item())
 
         # print(conv_b3.size())
         # print(lp_b3.size())
@@ -310,6 +318,9 @@ class Decoder(nn.Module):
                 padding = 0,
                 padding_mode = 'zeros') # TODO: Tune params
 
+        # Auxiliary
+        self.relu = nn.ReLU()
+
 
 
     def __pad(self, x, kernel, stride):
@@ -332,6 +343,7 @@ class Decoder(nn.Module):
         # Block 1
         up_b1 = self.up_b1(x)
         ct1_b1 = self.convt1_b1(x)
+        ct1_b1 = self.relu(ct1_b1)
 
         # print(up_b1.size())
         # print(ct1_b1.size())
@@ -343,6 +355,7 @@ class Decoder(nn.Module):
         # Block 2
         up_b2 = self.up_b2(concat_b1)
         ct1_b2 = self.convt1_b2(concat_b1)
+        ct1_b2 = self.relu(ct1_b2)
 
         # print(up_b2.size())
         # print(ct1_b2.size())
@@ -362,6 +375,7 @@ class Decoder(nn.Module):
         
         ## Decoder terminal
         c1_b3 = self.conv1_b3(concat_b2)
+        c1_b1 = self.relu(c1_b3)
 
         ## Combine upscaled embeding and decoders
         add_b3 = c1_b3 + embed_up
