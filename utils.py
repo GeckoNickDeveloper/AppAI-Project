@@ -10,7 +10,7 @@ class UciDataset(td.Dataset):
     def __init__(self, size, overlap):
         db = np.load('datasets/UCI-HAR.npy')        
         
-        self.data = create_windows(db, size, 6, overlap)
+        self.data = create_windows(db, size, 3, overlap)
         print(self.data.shape)
 
     def __len__(self):

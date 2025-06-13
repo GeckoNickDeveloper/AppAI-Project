@@ -18,13 +18,13 @@ SEED = 42069
 TRAIN_SIZE = 0.8
 
 ## Model
-INPUTS_SHAPE = (6, 100) # 2s at 50Hz (6 channels data)
+INPUTS_SHAPE = (3, 300) # 2s at 50Hz (6 channels data)
 
 ## Dataset
 OVERLAP = 0.0
 
 ## Training
-EPOCHS = 50
+EPOCHS = 5
 BATCH_SIZE = 64
 
 ## Paths
@@ -92,23 +92,16 @@ model.eval()
 with torch.no_grad():
     xp = model(x)
 
+print(x.size())
 
-fig, ax = plt.subplots(2, figsize=(10, 8))
+for i in range(x.size(0)):
+    fig, ax = plt.subplots(2, figsize=(10, 8))
 
-ax[0].plot(x[0].T[:,:3], label='True')
-ax[0].grid()
+    ax[0].plot(x[i].T, label='True')
+    ax[0].grid()
 
-ax[1].plot(xp[0].T[:,:3], label='Pred')
-ax[1].grid()
+    ax[1].plot(xp[i].T, label='Pred')
+    ax[1].grid()
 
-fig.legend()
-plt.show()
-
-
-
-
-
-
-
-
-
+    fig.legend()
+    plt.savefig(f'{i}.png', format='png')
