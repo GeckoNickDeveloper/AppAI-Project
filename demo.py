@@ -18,7 +18,8 @@ SEED = 42069
 TRAIN_SIZE = 0.8
 
 ## Model
-INPUTS_SHAPE = (3, 300) # 2s at 50Hz (6 channels data)
+# INPUTS_SHAPE = (3, 300) # 2s @50Hz (6 channels data)
+INPUTS_SHAPE = (1, 300) # 25h of data @.0033Hz (1 channel data)
 
 ## Dataset
 OVERLAP = 0.0
@@ -33,7 +34,8 @@ MODEL_PATH = f'models/AutoEncoder_e{EPOCHS}_bs{BATCH_SIZE}_seed{SEED}.pt'
 
 
 # Dataset
-dataset = utils.UciDataset(INPUTS_SHAPE[1], OVERLAP)
+# dataset = utils.UciDataset(INPUTS_SHAPE[1], OVERLAP)
+dataset = utils.PeanoDataset(INPUTS_SHAPE[1], OVERLAP)
 
 ## Train/Test Split
 train_size = int(TRAIN_SIZE * len(dataset))
