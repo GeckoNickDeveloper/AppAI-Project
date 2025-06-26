@@ -4,11 +4,31 @@ import torch.nn as nn
 import torch.utils.data as td
 
 import numpy as np
+import pandas as pd
 
 # Custom data loader
+class PeanoDataset(td.Dataset):
+    def __init__(self, size, overlap):
+        df = pd.read_csv('datasets/co2_peano_no_weekend.csv')
+        db = df[['_value']].values
+
+        self.data = create_windows(db, size, 1, overlap)
+        print(self.data.shape)
+    
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx): 
+        x_raw = self.data[idx]
+
+        x = torch.tensor(x_raw).T.float()
+        y = x.clone()
+
+        return x, y
+
 class UciDataset(td.Dataset):
     def __init__(self, size, overlap):
-        db = np.load('datasets/UCI-HAR.npy')        
+        db = np.load('datasets/UCI-HAR.npy')
         
         self.data = create_windows(db, size, 3, overlap)
         print(self.data.shape)
