@@ -18,14 +18,14 @@ SEED = 42069
 TRAIN_SIZE = 0.8
 
 ## Model
-# INPUTS_SHAPE = (3, 300) # 2s @50Hz (6 channels data)
-INPUTS_SHAPE = (1, 300) # 25h of data @.0033Hz (1 channel data)
+INPUTS_SHAPE = (3, 1500) # 30s @50Hz (6 channels data)
+# INPUTS_SHAPE = (1, 300) # 25h of data @.0033Hz (1 channel data)
 
 ## Dataset
 OVERLAP = 0.0
 
 ## Training
-EPOCHS = 5
+EPOCHS = 3
 BATCH_SIZE = 64
 
 ## Paths
@@ -34,8 +34,8 @@ MODEL_PATH = f'models/AutoEncoder_e{EPOCHS}_bs{BATCH_SIZE}_seed{SEED}.pt'
 
 
 # Dataset
-# dataset = utils.UciDataset(INPUTS_SHAPE[1], OVERLAP)
-dataset = utils.PeanoDataset(INPUTS_SHAPE[1], OVERLAP)
+dataset = utils.UciDataset(INPUTS_SHAPE[1], OVERLAP)
+# dataset = utils.PeanoDataset(INPUTS_SHAPE[1], OVERLAP)
 
 ## Train/Test Split
 train_size = int(TRAIN_SIZE * len(dataset))
@@ -57,8 +57,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = ae.AutoEncoder(INPUTS_SHAPE[0]).to(device)
 
 ## Criterion
-criterion = nn.L1Loss() # MAE
-# criterion = nn.MSELoss() # MSE
+# criterion = nn.L1Loss() # MAE
+criterion = nn.MSELoss() # MSE
 
 ## Optimizer
 optimizer = torch.optim.Adam(model.parameters(), lr = 0.001)
@@ -106,4 +106,5 @@ for i in range(x.size(0)):
     ax[1].grid()
 
     fig.legend()
-    plt.savefig(f'{i}.png', format='png')
+    plt.savefig(f'plots/{i}.png', format='png')
+    plt.savefig(f'plots/{i}.eps', format='eps')
