@@ -336,13 +336,19 @@ class AutoEncoder(nn.Module):
     def __init__(self, in_channels):
         super(AutoEncoder, self).__init__()
         
+        # Logger
+        self.logger = logger.get_logger(self.__class__.__name__, logger.WARNING)
+
         # Components
-        self.encoder = Encoder(in_channels, 64)
-        self.decoder = Decoder(64, in_channels)
+        self.encoder = Encoder(in_channels, 8)
+        self.decoder = Decoder(8, in_channels)
 
     def forward(self, x):
+        self.logger.debug(f'Input: {x.shape}')
+
         # Encode
         embedding = self.encoder(x)
+        self.logger.debug(f'Embedding: {embedding.shape}')
         
         # Decode
         out = self.decoder(embedding)

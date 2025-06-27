@@ -30,7 +30,7 @@ class UciDataset(td.Dataset):
     def __init__(self, size, overlap):
         db = np.load('datasets/UCI-HAR.npy')
         
-        self.data = create_windows(db, size, 3, overlap)
+        self.data = create_windows(db, size, 6, overlap)
         print(self.data.shape)
 
     def __len__(self):
@@ -97,7 +97,7 @@ def progress_bar(iteration, total, prefix = '', suffix = '', decimals = 1, lengt
         print()
 
 ## Train function
-def train(model, dataloader, criterion, optimizer, device):
+def train(model, dataloader, criterion, optimizer, device, show_progress = True):
     model.train()
     run_loss = 0.0
 
@@ -133,13 +133,14 @@ def train(model, dataloader, criterion, optimizer, device):
         run_loss += loss.item() * inputs.size(0)
 
         # Progress Bar
-        progress_bar(current_batch, batches, )
+        if show_progress:
+            progress_bar(current_batch, batches, )
         current_batch += 1
 
     return run_loss / len(dataloader.dataset)
 
 ## Evaluation function
-def evaluate(model, dataloader, criterion, device):
+def evaluate(model, dataloader, criterion, device, show_progress = True):
     model.eval()
     run_loss = 0.0
 
@@ -158,7 +159,8 @@ def evaluate(model, dataloader, criterion, device):
             run_loss += loss.item() * inputs.size(0)
 
             # Progress Bar
-            progress_bar(current_batch, batches, )
+            if show_progress:
+                progress_bar(current_batch, batches, )
             current_batch += 1
 
 
