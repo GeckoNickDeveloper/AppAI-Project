@@ -41,7 +41,7 @@ def get_logger(name, level = DEBUG):
     logger.setLevel(level)
 
     handler = logging.StreamHandler()
-    formatter = ColorFormatter('[%(levelname)s] %(asctime)s - %(name)s.%(funcName)s - %(message)s', '%H:%M:S')
+    formatter = ColorFormatter('[%(levelname)s] %(asctime)s - %(name)s.%(funcName)s - %(message)s', '%H:%M:%S.%m')
 
     handler.setFormatter(formatter)
 
