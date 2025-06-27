@@ -4,131 +4,82 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 import math
-
-
+import logger
 
 # Network definition
 ## Encoder
 class Encoder(nn.Module):
-    def __init__(self, in_channels):
+    def __init__(self, in_channels, out_channels):
         super(Encoder, self).__init__()
 
-        self.config = {
-            'convolutions': {    
-                'in-channels': [
-                    in_channels,
-                    (in_channels * 2 + 16),
-                    ((in_channels * 2 + 16) * 2 + 32)
-                ],
-                'out-channels': [
-                    16,
-                    32,
-                    in_channels
-                ],
-                'kernels': [
-                    7,
-                    3,
-                    1
-                ],
-                'strides': [
-                    2,
-                    2,
-                    1
-                ]
-            },
-            'poolings': {
-                'max-pool': {
-                    'kernels': [
-                        7,
-                        3
-                    ],
-                    'strides': [
-                        2,
-                        2
-                    ]
-                },
-                'avg-pool': {
-                    'kernels': [
-                        7,
-                        3
-                    ],
-                    'strides': [
-                        2,
-                        2
-                    ]
-                },
-                'lp-pool': {
-                    'p': 7,
-                    'kernel': 3,
-                    'stride': 5
-                },
-            }
-        }
+        # Logger
+        self.logger = logger.get_logger(self.__class__.__name__, logger.WARNING)
 
-        # print('CONFIG ==================================')
-        # print(self.config)
+        # Layers
+        self.layers = nn.ModuleDict({
+            'block-1': nn.ModuleDict({
+                'avg-head': nn.ModuleDict({}),
+                'lp-head': nn.ModuleDict({}),
+                'max-head': nn.ModuleDict({}),
+            }),
+            'block-2': nn.ModuleDict({
+                'avg-head': nn.ModuleDict({}),
+                'lp-head': nn.ModuleDict({}),
+                'max-head': nn.ModuleDict({}),
+            }),
+            'block-3': nn.ModuleDict({}),
+            'activation': nn.ReLU()
+        })
+
+
 
         # Block 1
-        self.max_pool_b1 = nn.MaxPool1d(
-                self.config['poolings']['max-pool']['kernels'][0],
-                stride = self.config['poolings']['max-pool']['strides'][0],
-                padding = 0)
+        ## AvgPool Head
+        self.layers['block-1']['avg-head']['pool'] = nn.AvgPool1d(3, stride = 2, padding = 0)
+        self.layers['block-1']['avg-head']['conv-1'] = nn.Conv1d(in_channels, 32, 3, stride = 1)
+        self.layers['block-1']['avg-head']['conv-2'] = nn.Conv1d(32, 64, 3, stride = 1)
 
-        self.avg_pool_b1 = nn.AvgPool1d(
-                self.config['poolings']['avg-pool']['kernels'][0],
-                stride = self.config['poolings']['avg-pool']['strides'][0],
-                padding = 0)
-        
-        self.conv_b1 = nn.Conv1d(
-                self.config['convolutions']['in-channels'][0],
-                self.config['convolutions']['out-channels'][0],
-                self.config['convolutions']['kernels'][0],
-                stride = self.config['convolutions']['strides'][0])
-                # padding = 'same',
-                # padding_mode = 'reflect')
-        
+        ## LPPool Head
+        self.layers['block-1']['lp-head']['pool'] = nn.AvgPool1d(3, stride = 2, padding = 0)
+        self.layers['block-1']['lp-head']['conv-1'] = nn.Conv1d(in_channels, 32, 3, stride = 1)
+        self.layers['block-1']['lp-head']['conv-2'] = nn.Conv1d(32, 64, 3, stride = 1)
+
+        ## MaxPool Head
+        self.layers['block-1']['max-head']['pool'] = nn.MaxPool1d(3, stride = 2, padding = 0)
+        self.layers['block-1']['max-head']['conv-1'] = nn.Conv1d(in_channels, 32, 3, stride = 1)
+        self.layers['block-1']['max-head']['conv-2'] = nn.Conv1d(32, 64, 3, stride = 1)
+
+        ## Aggregator
+        self.layers['block-1']['aggregator'] = nn.Conv1d(64 * 3, 128, 3, stride = 1)
+
 
 
         # Block 2
-        self.max_pool_b2 = nn.MaxPool1d(
-                self.config['poolings']['max-pool']['kernels'][1],
-                stride = self.config['poolings']['max-pool']['strides'][1],
-                padding = 0)
-        
-        self.avg_pool_b2 = nn.AvgPool1d(
-                self.config['poolings']['avg-pool']['kernels'][1],
-                stride = self.config['poolings']['avg-pool']['strides'][1],
-                padding = 0)
-        
-        self.conv_b2 = nn.Conv1d(
-                self.config['convolutions']['in-channels'][1],
-                self.config['convolutions']['out-channels'][1],
-                self.config['convolutions']['kernels'][1],
-                stride = self.config['convolutions']['strides'][1])
-                #padding = 'same',
-                #padding_mode = 'reflect')
+        ## AvgPool Head
+        self.layers['block-2']['avg-head']['pool'] = nn.AvgPool1d(3, stride = 2, padding = 0)
+        self.layers['block-2']['avg-head']['conv-1'] = nn.Conv1d(128, 32, 3, stride = 1)
+        self.layers['block-2']['avg-head']['conv-2'] = nn.Conv1d(32, 64, 3, stride = 1)
+
+        ## LPPool Head
+        self.layers['block-2']['lp-head']['pool'] = nn.AvgPool1d(3, stride = 2, padding = 0)
+        self.layers['block-2']['lp-head']['conv-1'] = nn.Conv1d(128, 32, 3, stride = 1)
+        self.layers['block-2']['lp-head']['conv-2'] = nn.Conv1d(32, 64, 3, stride = 1)
+
+        ## MaxPool Head
+        self.layers['block-2']['max-head']['pool'] = nn.MaxPool1d(3, stride = 2, padding = 0)
+        self.layers['block-2']['max-head']['conv-1'] = nn.Conv1d(128, 32, 3, stride = 1)
+        self.layers['block-2']['max-head']['conv-2'] = nn.Conv1d(32, 64, 3, stride = 1)
+
+        ## Aggregator
+        self.layers['block-2']['aggregator'] = nn.Conv1d(64 * 3, 128, 3, stride = 1)
 
 
 
         # Block 3
-        self.conv_b3 = nn.Conv1d(
-                self.config['convolutions']['in-channels'][2],
-                self.config['convolutions']['out-channels'][2],
-                self.config['convolutions']['kernels'][2],
-                stride = self.config['convolutions']['strides'][2])
-                # padding = 'same',
-                # padding_mode = 'reflect')
+        ## Embedder
+        self.layers['block-3']['embedder'] = nn.Conv1d(128, out_channels, 3, stride = 1)
 
-        self.lp_pool_b3 = nn.LPPool1d(
-                self.config['poolings']['lp-pool']['p'],
-                self.config['poolings']['lp-pool']['kernel'],
-                stride = self.config['poolings']['lp-pool']['stride'])
-
-        # Auxiliary
-        self.relu = nn.ReLU()
-    
-
-
+    # Aux function to apply pad 'sane' to strided convolutions
     def __pad(self, x, kernel, stride):
         L_in = x.size(-1)
 
@@ -139,190 +90,169 @@ class Encoder(nn.Module):
         pad_left = pad_needed // 2
         pad_right = pad_needed - pad_left
 
-        return F.pad(x, (pad_left, pad_right))
-
-
+        return F.pad(x, (pad_left, pad_right), mode = 'reflect')
 
     def forward(self, x):
-        # Padding X (padding same but usable for strided)
-        x = self.__pad(
-            x,
-            self.config['convolutions']['kernels'][0],
-            self.config['convolutions']['strides'][0],
-        )
-        # print(x.size())
-        
-        # print('======================================== ENCODER')
-
         # Block 1
-        mp_b1 = self.max_pool_b1(x)
-        ap_b1 = self.avg_pool_b1(x)
-        conv_b1 = self.conv_b1(x)
-        conv_b1 = self.relu(conv_b1)
-      
-        # print('============================')
-        # print(mp_b1.size())
-        # print(conv_b1.size())
-        # print(ap_b1.size())
+        x = self.__pad(x, self.layers['block-1']['avg-head']['pool'].kernel_size[0], self.layers['block-1']['avg-head']['pool'].stride[0])
+
+        ## Avg Head
+        avg_head_b1 = self.layers['block-1']['avg-head']['pool'](x)
+
+        avg_head_b1 = self.__pad(avg_head_b1, self.layers['block-1']['avg-head']['conv-1'].kernel_size[0], self.layers['block-1']['avg-head']['conv-1'].stride[0])
+        avg_head_b1 = self.layers['block-1']['avg-head']['conv-1'](avg_head_b1)
+        avg_head_b1 = self.layers['activation'](avg_head_b1)
+
+        avg_head_b1 = self.__pad(avg_head_b1, self.layers['block-1']['avg-head']['conv-2'].kernel_size[0], self.layers['block-1']['avg-head']['conv-2'].stride[0])
+        avg_head_b1 = self.layers['block-1']['avg-head']['conv-2'](avg_head_b1)
+        avg_head_b1 = self.layers['activation'](avg_head_b1)
+
+        self.logger.debug(f'Avg Head (1) - {avg_head_b1.shape}')
+
+        ## LP Head
+        lp_head_b1 = self.layers['block-1']['lp-head']['pool'](x)
+
+        lp_head_b1 = self.__pad(lp_head_b1, self.layers['block-1']['lp-head']['conv-1'].kernel_size[0], self.layers['block-1']['lp-head']['conv-1'].stride[0])
+        lp_head_b1 = self.layers['block-1']['lp-head']['conv-1'](lp_head_b1)
+        lp_head_b1 = self.layers['activation'](lp_head_b1)
+
+        lp_head_b1 = self.__pad(lp_head_b1, self.layers['block-1']['lp-head']['conv-2'].kernel_size[0], self.layers['block-1']['lp-head']['conv-2'].stride[0])
+        lp_head_b1 = self.layers['block-1']['lp-head']['conv-2'](lp_head_b1)
+        lp_head_b1 = self.layers['activation'](lp_head_b1)
         
-        # Concatenate then pad
-        concat_b1 = torch.cat([mp_b1, conv_b1, ap_b1], dim=1)
-        # print(concat_b1.size())
-        concat_b1 = self.__pad(
-            concat_b1,
-            self.config['convolutions']['kernels'][1],
-            self.config['convolutions']['strides'][1],
-        )
+        self.logger.debug(f'LP Head (1) - {lp_head_b1.shape}')
+
+        ## Max Head
+        max_head_b1 = self.layers['block-1']['max-head']['pool'](x)
+        
+        max_head_b1 = self.__pad(max_head_b1, self.layers['block-1']['max-head']['conv-1'].kernel_size[0], self.layers['block-1']['max-head']['conv-1'].stride[0])
+        max_head_b1 = self.layers['block-1']['max-head']['conv-1'](max_head_b1)
+        max_head_b1 = self.layers['activation'](max_head_b1)
+        
+        max_head_b1 = self.__pad(max_head_b1, self.layers['block-1']['max-head']['conv-2'].kernel_size[0], self.layers['block-1']['max-head']['conv-2'].stride[0])
+        max_head_b1 = self.layers['block-1']['max-head']['conv-2'](max_head_b1)
+        max_head_b1 = self.layers['activation'](max_head_b1)
+        
+        self.logger.debug(f'Max Head (1) - {max_head_b1.shape}')
+
+        ## Aggregator
+        concat_b1 = torch.cat([avg_head_b1, lp_head_b1, max_head_b1], dim=1)
+        concat_b1 = self.__pad(concat_b1, self.layers['block-1']['aggregator'].kernel_size[0], self.layers['block-1']['aggregator'].stride[0])
+        aggregated_b1 = self.layers['block-1']['aggregator'](concat_b1)
+        aggregated_b1 = self.layers['activation'](aggregated_b1)
+        
+        self.logger.debug(f'Aggregator (1) - {aggregated_b1.shape}')
+
 
         # Block 2
-        mp_b2 = self.max_pool_b2(concat_b1)
-        ap_b2 = self.avg_pool_b2(concat_b1)
-        conv_b2 = self.conv_b2(concat_b1)
-        conv_b2 = self.relu(conv_b2)
+        aggregated_b1 = self.__pad(aggregated_b1, self.layers['block-2']['avg-head']['pool'].kernel_size[0], self.layers['block-2']['avg-head']['pool'].stride[0])
+        
+        ## Avg Head
+        avg_head_b2 = self.layers['block-2']['avg-head']['pool'](aggregated_b1)
 
-        # print('============================')
-        # print(mp_b1.size())
-        # print(conv_b1.size())
-        # print(ap_b1.size()) 
+        avg_head_b2 = self.__pad(avg_head_b2, self.layers['block-2']['avg-head']['conv-1'].kernel_size[0], self.layers['block-2']['avg-head']['conv-1'].stride[0])
+        avg_head_b2 = self.layers['block-2']['avg-head']['conv-1'](avg_head_b2)
+        avg_head_b2 = self.layers['activation'](avg_head_b2)
 
-        # Concatenate then pad
-        concat_b2 = torch.cat([mp_b2, conv_b2, ap_b2], dim=1)
-        # print(concat_b2.size())
-        concat_b2 = self.__pad(
-            concat_b2,
-            self.config['convolutions']['kernels'][2],
-            self.config['convolutions']['strides'][2],
-        )
+        avg_head_b2 = self.__pad(avg_head_b2, self.layers['block-2']['avg-head']['conv-2'].kernel_size[0], self.layers['block-2']['avg-head']['conv-2'].stride[0])
+        avg_head_b2 = self.layers['block-2']['avg-head']['conv-2'](avg_head_b2)
+        avg_head_b2 = self.layers['activation'](avg_head_b2)
+
+        self.logger.debug(f'Avg Head (2) - {avg_head_b2.shape}')
+        
+        ## LP Head
+        lp_head_b2 = self.layers['block-2']['lp-head']['pool'](aggregated_b1)
+
+        lp_head_b2 = self.__pad(lp_head_b2, self.layers['block-2']['lp-head']['conv-1'].kernel_size[0], self.layers['block-2']['lp-head']['conv-1'].stride[0])
+        lp_head_b2 = self.layers['block-2']['lp-head']['conv-1'](lp_head_b2)
+        lp_head_b2 = self.layers['activation'](lp_head_b2)
+
+        lp_head_b2 = self.__pad(lp_head_b2, self.layers['block-2']['lp-head']['conv-2'].kernel_size[0], self.layers['block-2']['lp-head']['conv-2'].stride[0])
+        lp_head_b2 = self.layers['block-2']['lp-head']['conv-2'](lp_head_b2)
+        lp_head_b2 = self.layers['activation'](lp_head_b2)
+
+        self.logger.debug(f'LP Head (2) - {lp_head_b2.shape}')
+        
+        ## Max Head
+        max_head_b2 = self.layers['block-2']['max-head']['pool'](aggregated_b1)
+        
+        max_head_b2 = self.__pad(max_head_b2, self.layers['block-2']['max-head']['conv-1'].kernel_size[0], self.layers['block-2']['max-head']['conv-1'].stride[0])
+        max_head_b2 = self.layers['block-2']['max-head']['conv-1'](max_head_b2)
+        max_head_b2 = self.layers['activation'](max_head_b2)
+        
+        max_head_b2 = self.__pad(max_head_b2, self.layers['block-2']['max-head']['conv-2'].kernel_size[0], self.layers['block-2']['max-head']['conv-2'].stride[0])
+        max_head_b2 = self.layers['block-2']['max-head']['conv-2'](max_head_b2)
+        max_head_b2 = self.layers['activation'](max_head_b2)
+
+        self.logger.debug(f'Max Head (2) - {max_head_b2.shape}')
+
+        ## Aggregator
+        concat_b2 = torch.cat([avg_head_b2, lp_head_b2, max_head_b2], dim=1)
+        concat_b2 = self.__pad(concat_b2, self.layers['block-2']['aggregator'].kernel_size[0], self.layers['block-2']['aggregator'].stride[0])
+        aggregated_b2 = self.layers['block-2']['aggregator'](concat_b2)
+        aggregated_b2 = self.layers['activation'](aggregated_b2)
+        
+        self.logger.debug(f'Aggregator (2) - {aggregated_b2.shape}')
+
+
 
         # Block 3
-        conv_b3 = self.conv_b3(concat_b2)
-        conv_b3 = self.relu(conv_b3)
-        lp_b3 = self.lp_pool_b3(conv_b3)
+        aggregated_b2 = self.__pad(aggregated_b2, self.layers['block-3']['embedder'].kernel_size[0], self.layers['block-3']['embedder'].stride[0])
+        embedding = self.layers['block-3']['embedder'](aggregated_b2)
 
-        # print("Before LP Pool", conv_b3.min().item(), conv_b3.max().item())
+        self.logger.debug(f'Embedder - {embedding.shape}')
 
-        # print(conv_b3.size())
-        # print(lp_b3.size())
-
-        return lp_b3
-
+        return embedding
 
 
 
 ## Decoder
 class Decoder(nn.Module):
-    def __init__(self, in_channels):
+    def __init__(self, in_channels, out_channels):
         super(Decoder, self).__init__()
 
-        self.config = {
-            'deconvolutions': {
-                'in-channels': [
-                    in_channels,
-                    in_channels + 16,
-                ],
-                'out-channels': [
-                    16,
-                    32,
-                ],
-                'kernels': [
-                    4,
-                    5,
-                ],
-                'strides': [
-                    4,
-                    5,
-                ]
-            },
+        # Logger
+        self.logger = logger.get_logger(self.__class__.__name__, logger.WARNING)
 
-            'convolutions': {
-                'in-channels': [
-                    in_channels + 16 + 32,
-                    in_channels,
-                ],
-                'out-channels': [
-                    in_channels,
-                    in_channels,
-                ],
-                'kernels': [
-                    3,
-                    5,
-                ],
-                'strides': [
-                    1,
-                    1,
-                ]
+        # Layers
+        self.layers = nn.ModuleDict({
+            'block-1': nn.ModuleDict({
+                'up-tail': nn.ModuleDict({}),
+                'deconv-tail': nn.ModuleDict({})
+            }),
+            'block-2': nn.ModuleDict({
+                'up-tail': nn.ModuleDict({}),
+                'deconv-tail': nn.ModuleDict({})
+            }),
+            'skip-tail': nn.ModuleDict({}),
+            'activation': nn.ReLU()
+        })
 
-            },
-            
-            'upsamples': {
-                'scale-factors': [
-                    4,
-                    5,
-                    20
-                ]
-            }
-        }
-
-
-
+        # Expander
+        self.layers['expander'] = nn.Conv1d(in_channels, 256, 3, stride = 1)
+        
         # Block 1
-        self.up_b1 = nn.Upsample(
-                scale_factor = self.config['upsamples']['scale-factors'][0],
-                mode = 'linear')
+        self.layers['block-1']['up-tail'] = nn.Upsample(scale_factor = 2, mode = 'linear')
 
-        self.convt1_b1 = nn.ConvTranspose1d(
-                self.config['deconvolutions']['in-channels'][0],
-                self.config['deconvolutions']['out-channels'][0],
-                self.config['deconvolutions']['kernels'][0],
-                stride = self.config['deconvolutions']['strides'][0],
-                padding = 0,
-                output_padding = 0,
-                padding_mode = 'zeros') # TODO: Tune params
+        self.layers['block-1']['deconv-tail']['conv-t'] = nn.ConvTranspose1d(256, 32, 2, stride = 2, padding = 0)
+        self.layers['block-1']['deconv-tail']['conv'] = nn.Conv1d(32, 256, 3, stride = 1)
+        self.layers['block-1']['aggregator'] = nn.Conv1d(256 * 2, 256, 3, stride = 1)
         
-
-
         # Block 2
-        self.up_b2 = nn.Upsample(
-                scale_factor = self.config['upsamples']['scale-factors'][1],
-                mode = 'linear')
+        self.layers['block-2']['up-tail'] = nn.Upsample(scale_factor = 2, mode = 'linear')
         
-        self.convt1_b2 = nn.ConvTranspose1d(
-                self.config['deconvolutions']['in-channels'][1],
-                self.config['deconvolutions']['out-channels'][1],
-                self.config['deconvolutions']['kernels'][1],
-                stride = self.config['deconvolutions']['strides'][1],
-                padding = 0,
-                output_padding = 0,
-                padding_mode = 'zeros') # TODO: Tune params
+        self.layers['block-2']['deconv-tail']['conv-t'] = nn.ConvTranspose1d(256, 32, 2, stride = 2, padding = 0)
+        self.layers['block-2']['deconv-tail']['conv'] = nn.Conv1d(32, 256, 3, stride = 1)
+        self.layers['block-2']['aggregator'] = nn.Conv1d(256 * 2, 256, 3, stride = 1)
         
+        # Skip Tail
+        self.layers['skip-tail']['conv-t-1'] = nn.ConvTranspose1d(256, 32, 2, stride = 2, padding = 0)
+        self.layers['skip-tail']['conv-t-2'] = nn.ConvTranspose1d(32, 256, 2, stride = 2, padding = 0)
 
+        # Aggregator
+        self.layers['aggregator'] = nn.Conv1d(256 * 2, out_channels, 3, stride = 1)
 
-        # Block 3
-        self.embedding_up = nn.Upsample(
-                scale_factor = self.config['upsamples']['scale-factors'][2],
-                mode = 'linear')
-        
-        self.conv1_b3 = nn.Conv1d(
-                self.config['convolutions']['in-channels'][0],
-                self.config['convolutions']['out-channels'][0],
-                self.config['convolutions']['kernels'][0],
-                stride = self.config['convolutions']['strides'][0],
-                padding = 0,
-                padding_mode = 'zeros') # TODO: Tune params
-
-        self.conv2_b3 = nn.Conv1d(
-                self.config['convolutions']['in-channels'][1],
-                self.config['convolutions']['out-channels'][1],
-                self.config['convolutions']['kernels'][1],
-                stride = self.config['convolutions']['strides'][1],
-                padding = 0,
-                padding_mode = 'zeros') # TODO: Tune params
-
-        # Auxiliary
-        self.relu = nn.ReLU()
-
-
-
+    # Aux function to apply pad 'sane' to strided convolutions
     def __pad(self, x, kernel, stride):
         L_in = x.size(-1)
 
@@ -333,63 +263,71 @@ class Decoder(nn.Module):
         pad_left = pad_needed // 2
         pad_right = pad_needed - pad_left
 
-        return F.pad(x, (pad_left, pad_right))
-
-
+        return F.pad(x, (pad_left, pad_right), mode = 'reflect')
 
     def forward(self, x):
-        # print('======================================== DECODER')
-
-        # Block 1
-        up_b1 = self.up_b1(x)
-        ct1_b1 = self.convt1_b1(x)
-        ct1_b1 = self.relu(ct1_b1)
-
-        # print(up_b1.size())
-        # print(ct1_b1.size())
-
-        concat_b1 = torch.cat([up_b1, ct1_b1], dim=1)
-        # print(concat_b1.size())
-        # print('===============')
-
-        # Block 2
-        up_b2 = self.up_b2(concat_b1)
-        ct1_b2 = self.convt1_b2(concat_b1)
-        ct1_b2 = self.relu(ct1_b2)
-
-        # print(up_b2.size())
-        # print(ct1_b2.size())
-
-        concat_b2 = torch.cat([up_b2, ct1_b2], dim=1) 
-        # print(concat_b2.size())
-        concat_b2 = self.__pad(
-            concat_b2,
-            self.config['convolutions']['kernels'][0],
-            self.config['convolutions']['strides'][0]
-        )
-        # print('===============')
-
-        # Block 3
-        ## Embedding long dependency
-        embed_up = self.embedding_up(x)
+        # Expander
+        x = self.__pad(x, self.layers['expander'].kernel_size[0], self.layers['expander'].stride[0])
+        expanded = self.layers['expander'](x)
+        expanded = self.layers['activation'](expanded)
         
-        ## Decoder terminal
-        c1_b3 = self.conv1_b3(concat_b2)
-        c1_b1 = self.relu(c1_b3)
+        # Block 1
+        up_tail_b1 = self.layers['block-1']['up-tail'](expanded)
 
-        ## Combine upscaled embeding and decoders
-        add_b3 = c1_b3 + embed_up
-        add_b3 = self.__pad(
-            add_b3,
-            self.config['convolutions']['kernels'][1],
-            self.config['convolutions']['strides'][1]
-        )
+        deconv_tail_b1 = self.layers['block-1']['deconv-tail']['conv-t'](expanded)
+        deconv_tail_b1 = self.layers['activation'](deconv_tail_b1)
+        deconv_tail_b1 = self.__pad(deconv_tail_b1, self.layers['block-1']['deconv-tail']['conv'].kernel_size[0], self.layers['block-1']['deconv-tail']['conv'].stride[0])
+        deconv_tail_b1 = self.layers['block-1']['deconv-tail']['conv'](deconv_tail_b1)
+        deconv_tail_b1 = self.layers['activation'](deconv_tail_b1)
 
-        ## Transform data 
-        c2_b3 = self.conv2_b3(add_b3)
+        # add_b1 = up_tail_b1 + deconv_tail_b1
+        # add_b1 = self.__pad(add_b1, self.layers['block-1']['aggregator'].kernel_size[0], self.layers['block-1']['aggregator'].stride[0])
+        concat_b1 = torch.cat([up_tail_b1, deconv_tail_b1], dim=1)
+        concat_b1 = self.__pad(concat_b1, self.layers['block-1']['aggregator'].kernel_size[0], self.layers['block-1']['aggregator'].stride[0])
+        
+        # aggregator_b1 = self.layers['block-1']['aggregator'](add_b1)
+        aggregator_b1 = self.layers['block-1']['aggregator'](concat_b1)
+        aggregator_b1 = self.layers['activation'](aggregator_b1)
+        
+        self.logger.debug(f'Aggregator 1 - {aggregator_b1.shape}')
 
-        return c2_b3
+        
+        # Block 2
+        up_tail_b2 = self.layers['block-2']['up-tail'](aggregator_b1)
 
+
+        deconv_tail_b2 = self.layers['block-2']['deconv-tail']['conv-t'](aggregator_b1)
+        deconv_tail_b2 = self.layers['activation'](deconv_tail_b2)
+        deconv_tail_b2 = self.__pad(deconv_tail_b2, self.layers['block-2']['deconv-tail']['conv'].kernel_size[0], self.layers['block-2']['deconv-tail']['conv'].stride[0])
+        deconv_tail_b2 = self.layers['block-2']['deconv-tail']['conv'](deconv_tail_b2)
+        deconv_tail_b2 = self.layers['activation'](deconv_tail_b2)
+
+        # add_b2 = up_tail_b2 + deconv_tail_b2
+        # add_b2 = self.__pad(add_b2, self.layers['block-2']['aggregator'].kernel_size[0], self.layers['block-2']['aggregator'].stride[0])
+        concat_b2 = torch.cat([up_tail_b2, deconv_tail_b2], dim=1)
+        concat_b2 = self.__pad(concat_b2, self.layers['block-2']['aggregator'].kernel_size[0], self.layers['block-2']['aggregator'].stride[0])
+        
+        # aggregator_b2 = self.layers['block-2']['aggregator'](add_b2)
+        aggregator_b2 = self.layers['block-2']['aggregator'](concat_b2)
+        aggregator_b2 = self.layers['activation'](aggregator_b2)
+
+
+        self.logger.debug(f'Aggregator 2 - {aggregator_b2.shape}')
+        
+        # Skip Tail
+        skip_tail = self.layers['skip-tail']['conv-t-1'](expanded)
+        skip_tail = self.layers['activation'](skip_tail)
+        skip_tail = self.layers['skip-tail']['conv-t-2'](skip_tail)
+        skip_tail = self.layers['activation'](skip_tail)
+
+        self.logger.debug(f'Skip Tail - {skip_tail.shape}')
+
+        # Aggregator
+        concat = torch.cat([aggregator_b2, skip_tail], dim=1)
+        concat = self.__pad(concat, self.layers['aggregator'].kernel_size[0], self.layers['aggregator'].stride[0])
+        out = self.layers['aggregator'](concat)
+        
+        return out
 
 
 
@@ -398,13 +336,19 @@ class AutoEncoder(nn.Module):
     def __init__(self, in_channels):
         super(AutoEncoder, self).__init__()
         
+        # Logger
+        self.logger = logger.get_logger(self.__class__.__name__, logger.WARNING)
+
         # Components
-        self.encoder = Encoder(in_channels)
-        self.decoder = Decoder(in_channels)
+        self.encoder = Encoder(in_channels, 8)
+        self.decoder = Decoder(8, in_channels)
 
     def forward(self, x):
+        self.logger.debug(f'Input: {x.shape}')
+
         # Encode
         embedding = self.encoder(x)
+        self.logger.debug(f'Embedding: {embedding.shape}')
         
         # Decode
         out = self.decoder(embedding)
