@@ -6,86 +6,14 @@ _logger = logger.get_logger('UTILS', logger.INFO)
 # Imports
 import torch
 import torch.nn as nn
-import torch.utils.data as td
 
 import numpy as np
-import pandas as pd
 import random
 
 import matplotlib.pyplot as plt
 
 
-
-# Custom data loader
-class PeanoDataset(td.Dataset):
-    def __init__(self, size, overlap):
-        df = pd.read_csv('datasets/co2_peano_no_weekend.csv')
-        db = df[['_value']].values
-
-        self.data = create_windows(db, size, 1, overlap)
-        _logger.info(f'Loaded dataset: ({self.data.shape})')
-    
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, idx): 
-        x_raw = self.data[idx]
-
-        x = torch.tensor(x_raw).T.float()
-        y = x.clone()
-
-        return x, y
-
-class UciDataset(td.Dataset):
-    def __init__(self, size, overlap):
-        db = np.load('datasets/UCI-HAR.npy')
-        
-        self.data = create_windows(db, size, 6, overlap)
-        _logger.info(f'Loaded dataset: ({self.data.shape})\n')
-
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, idx): 
-        x_raw = self.data[idx]
-
-        x = torch.tensor(x_raw).T.float()
-        y = x.clone()
-
-        return x, y
-
-
-
-# Utility functions
-## Windows
-def create_windows(db, size, delimiter, overlap = 0.0):
-    _logger.info(f'Creating windows - Started')
-
-    windows = []
-
-    # Iteration step 
-    step = size - int(size * overlap)
-    i = 0
-    total_db_len = len(db)
-
-    # Loop data
-    while (i + size) < total_db_len:
-        # Get data
-        curr = np.array(
-            db[i:(i + size), :delimiter]
-        )
-        
-        # Push to output
-        windows.append(curr)
-
-        # Step to next window
-        i += step
-
-    _logger.info(f'Creating windows - Terminated\n')
-    
-    return np.array(windows)
-
-## Progress Bar
+# Progress Bar
 def progress_bar(iteration, total, prefix = '', suffix = '', decimals = 1, length = 80, fill = '▬', to_fill = ' ', end = '\r'):
     # Defualt prefix
     if prefix == '':
@@ -106,7 +34,7 @@ def progress_bar(iteration, total, prefix = '', suffix = '', decimals = 1, lengt
     if iteration == total:
         print()
 
-## Train function
+# Train function
 def train(model, dataloader, criterion, optimizer, device, show_progress = True):
     model.train()
     run_loss = 0.0
@@ -149,7 +77,7 @@ def train(model, dataloader, criterion, optimizer, device, show_progress = True)
 
     return run_loss / len(dataloader.dataset)
 
-## Evaluation function
+# Evaluation function
 def evaluate(model, dataloader, criterion, device, show_progress = True):
     model.eval()
     run_loss = 0.0
@@ -176,7 +104,7 @@ def evaluate(model, dataloader, criterion, device, show_progress = True):
 
     return run_loss / len(dataloader.dataset)
 
-## Determinism
+# Determinism
 def set_seed(seed):
     random.seed(seed)
     np.random.seed(seed)
@@ -192,7 +120,7 @@ def seed_worker(worker_id):
     np.random.seed(worker_seed)
     random.seed(worker_seed)
 
-## Plotting
+# Plotting
 def plot_har(x_true: np.ndarray, x_pred: np.ndarray, filename: str):
     # Plot colors
     colors = [

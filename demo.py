@@ -13,6 +13,7 @@ import torch.utils.data as td
 import time
 
 import ae
+import datasets as ds
 import utils
 
 
@@ -52,8 +53,8 @@ utils.set_seed(SEED)
 # Dataset
 _logger.info('Loading dataset\n')
 
-dataset = utils.UciDataset(INPUTS_SHAPE[1], OVERLAP, )
-# dataset = utils.PeanoDataset(INPUTS_SHAPE[1], OVERLAP)
+dataset = ds.UciDataset(INPUTS_SHAPE[1], OVERLAP)
+# dataset = ds.PeanoDataset(INPUTS_SHAPE[1], OVERLAP)
 
 ## Train/Test Split
 train_size = int(TRAIN_SIZE * len(dataset))
@@ -75,7 +76,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 ## Model
 _logger.info('Creating model\n')
 
-model = ae.AutoEncoder(INPUTS_SHAPE[0]).to(device)
+model = ae.AutoEncoder(INPUTS_SHAPE[0], INPUTS_SHAPE[0]).to(device)
 
 ## Criterion
 # criterion = nn.L1Loss() # MAE
