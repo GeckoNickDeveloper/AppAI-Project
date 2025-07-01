@@ -32,7 +32,7 @@ class ColorFormatter(logging.Formatter):
         return f'{color}{message}{Style.RESET_ALL}'
 
 # Logger definition
-def get_logger(name, level = DEBUG):
+def get_logger(name, level = DEBUG, specFunc = False):
     logger = logging.getLogger(name)
 
     if logger.hasHandlers():
@@ -41,7 +41,12 @@ def get_logger(name, level = DEBUG):
     logger.setLevel(level)
 
     handler = logging.StreamHandler()
-    formatter = ColorFormatter('[%(levelname)s] %(asctime)s - %(name)s.%(funcName)s - %(message)s', '%H:%M:%S.%m')
+
+    # Change format in case function is needed in logging
+    if specFunc:
+        formatter = ColorFormatter('[%(levelname)s] %(asctime)s - %(name)s.%(funcName)s - %(message)s', '%H:%M:%S')
+    else:
+        formatter = ColorFormatter('[%(levelname)s] %(asctime)s - %(name)s - %(message)s', '%H:%M:%S')
 
     handler.setFormatter(formatter)
 
