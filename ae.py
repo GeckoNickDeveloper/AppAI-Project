@@ -343,7 +343,7 @@ class AutoEncoder(nn.Module):
 
         ## Compression ratio - INFORMATIVE
         self.compression_ratio = 4.0 * (float(in_channels) / float(embedding_channels))
-        self.logger.info(f'Compression ratio: {self.compression_ratio:.1f}:1')
+        self.logger.info(f'Compression ratio: {self.compression_ratio:.2f}:1')
 
         # Components
         self.encoder = Encoder(in_channels, embedding_channels)

@@ -9,9 +9,23 @@ import torch.nn as nn
 
 import numpy as np
 import random
+import os
 
 import matplotlib.pyplot as plt
 
+# Build directory by given path
+def build_directories(path, verbose: bool = True):
+    directories = path.split('/')
+    building = ''
+
+    for directory in directories:
+        building += directory + '/'
+
+        if verbose:
+            print(f'Building {building}')
+
+        if not os.path.exists(building):
+            os.mkdir(building)
 
 # Progress Bar
 def progress_bar(iteration, total, prefix = '', suffix = '', decimals = 1, length = 80, fill = '▬', to_fill = ' ', end = '\r'):

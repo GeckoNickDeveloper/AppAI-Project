@@ -11,6 +11,7 @@ import torch.nn as nn
 import torch.utils.data as td
 
 import time
+import sys
 
 import ae
 import datasets as ds
@@ -19,26 +20,40 @@ import utils
 
 
 # Settings
+CMD_PARAM = True
+
 ## Globals
 SEED = 42069
 TRAIN_SIZE = 0.8
 
 ## Model
-# INPUTS_SHAPE = (3, 3000) # 1m @50Hz (3 channels data)
 INPUTS_SHAPE = (6, 100) # 2s @50Hz (6 channels data)
-# INPUTS_SHAPE = (1, 300) # 25h of data @.0033Hz (1 channel data)
 
 ## Dataset
 OVERLAP = 0.0
 
 ## Training
-EPOCHS = 5
+EPOCHS = 100
 BATCH_SIZE = 64
 
+## COMMAND LINE OVERRIDE
+if CMD_PARAM:
+    EPOCHS = int(sys.argv[1])
+    BATCH_SIZE = int(sys.argv[2])
+    SEED = int(sys.argv[3])
+
 ## Paths
-MODEL_PATH = f'models/AutoEncoder_e{EPOCHS}_bs{BATCH_SIZE}_seed{SEED}.pt'
+MODEL_PATH = './models'
+MODEL_NAME = f'AutoEncoder_ws{INPUTS_SHAPE[1]}_ch{INPUTS_SHAPE[0]}_e{EPOCHS}_bs{BATCH_SIZE}_seed{SEED}'
+MODEL_FILENAME = f'{MODEL_PATH}/{MODEL_NAME}.pt'
 
+LOG_PATH = './log'
+LOG_NAME = f'sweep_ws{INPUTS_SHAPE[1]}_ch{INPUTS_SHAPE[0]}'
+LOG_FILENAME = f'{LOG_PATH}/{LOG_NAME}.log'
 
+# Build directories
+utils.build_directories(MODEL_PATH)
+utils.build_directories(LOG_PATH)
 
 # Set Determinism
 _logger.info('Setting seed for determinism\n')
@@ -113,15 +128,19 @@ for i in range(EPOCHS):
 
 # Model files
 ## Save model
-torch.save(model, MODEL_PATH)
+torch.save(model, MODEL_FILENAME)
 
 ## Load model
-model = torch.load(MODEL_PATH, weights_only = False)
+model = torch.load(MODEL_FILENAME, weights_only = False)
 
 # Evaluate model
 eval_loss = utils.evaluate(model, test_loader, criterion, device)
 print(f'Eval: {eval_loss}')
 
+# Log on file
+with open(LOG_FILENAME, 'a') as log:
+    line = f'AutoEncoder,{SEED},{INPUTS_SHAPE[1]},{INPUTS_SHAPE[0]},{BATCH_SIZE},{EPOCHS},{eval_loss}\n'
+    log.write(line)
 
 
 # Plot
