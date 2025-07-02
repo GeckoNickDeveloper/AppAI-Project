@@ -28,6 +28,7 @@ TRAIN_SIZE = 0.8
 
 ## Model
 INPUTS_SHAPE = (6, 100) # 2s @50Hz (6 channels data)
+EMBEDDING_CHANNELS = INPUTS_SHAPE[0]
 
 ## Dataset
 OVERLAP = 0.0
@@ -38,9 +39,15 @@ BATCH_SIZE = 64
 
 ## COMMAND LINE OVERRIDE
 if CMD_PARAM:
-    EPOCHS = int(sys.argv[1])
-    BATCH_SIZE = int(sys.argv[2])
-    SEED = int(sys.argv[3])
+    # Model
+    EMBEDDING_CHANNELS = int(sys.argv[1])
+    
+    # Training
+    EPOCHS = int(sys.argv[2])
+    BATCH_SIZE = int(sys.argv[3])
+    
+    # General
+    SEED = int(sys.argv[4])
 
 ## Paths
 MODEL_PATH = './models'
@@ -91,7 +98,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 ## Model
 _logger.info('Creating model\n')
 
-model = ae.AutoEncoder(INPUTS_SHAPE[0], INPUTS_SHAPE[0]).to(device)
+model = ae.AutoEncoder(INPUTS_SHAPE[0], EMBEDDING_CHANNELS).to(device)
 
 ## Criterion
 # criterion = nn.L1Loss() # MAE
@@ -139,10 +146,12 @@ print(f'Eval: {eval_loss}')
 
 # Log on file
 with open(LOG_FILENAME, 'a') as log:
-    line = f'AutoEncoder,{SEED},{INPUTS_SHAPE[1]},{INPUTS_SHAPE[0]},{BATCH_SIZE},{EPOCHS},{eval_loss}\n'
+    line = f'AutoEncoder,{EMBEDDING_CHANNELS},{SEED},{INPUTS_SHAPE[1]},{INPUTS_SHAPE[0]},{BATCH_SIZE},{EPOCHS},{eval_loss}\n'
     log.write(line)
 
 
+
+'''
 # Plot
 ## Get one batch
 batch = next(iter(test_loader))
@@ -159,3 +168,4 @@ with torch.no_grad():
 ## Generate plots
 # for i in range(x.size(0)):
 #     utils.plot_har(x.cpu()[i].T, xp.cpu()[i].T, f'plot-{i}')
+'''
