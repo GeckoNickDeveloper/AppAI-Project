@@ -146,7 +146,7 @@ print(f'Eval: {eval_loss}')
 
 # Log on file
 with open(LOG_FILENAME, 'a') as log:
-    line = f'AutoEncoder,{EMBEDDING_CHANNELS},{SEED},{INPUTS_SHAPE[1]},{INPUTS_SHAPE[0]},{BATCH_SIZE},{EPOCHS},{eval_loss}\n'
+    line = f'AutoEncoder,{EMBEDDING_CHANNELS},{model.compression_ratio}:1,{SEED},{INPUTS_SHAPE[1]},{INPUTS_SHAPE[0]},{BATCH_SIZE},{EPOCHS},{eval_loss}\n'
     log.write(line)
 
 
