@@ -112,11 +112,42 @@ def evaluate(model, dataloader, criterion, device, show_progress = True):
 
             # Progress Bar
             if show_progress:
-                progress_bar(current_batch, batches, )
+                progress_bar(current_batch, batches)
             current_batch += 1
 
 
     return run_loss / len(dataloader.dataset)
+
+# Predict
+def predict(model, dataloader, device, show_progress = True):
+    # Set to eval mode
+    model.eval()
+    predictions = []
+    targets = []
+
+    with torch.no_grad():
+        # Counters (progressbar)
+        current_batch = 1
+        batches = len(dataloader)
+    
+        # Actual loop
+        for inputs, labels in dataloader:
+            inputs = inputs.to(device)
+            output = model(inputs)
+            predictions.append(output.detach().cpu().numpy())
+            targets.append(inputs.detach().cpu().numpy())
+
+            # Progress Bar
+            if show_progress:
+                progress_bar(current_batch, batches)
+            current_batch += 1
+
+    # Stack all batches
+    predictions = np.concatenate(predictions, axis=0).reshape(-1)
+    targets = np.concatenate(targets, axis=0).reshape(-1)
+
+    # Return (y_pred, y_true)
+    return (predictions, targets)
 
 # Determinism
 def set_seed(seed):

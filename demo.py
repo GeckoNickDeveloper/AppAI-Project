@@ -1,7 +1,7 @@
 # Logger
 import logger
 
-_logger = logger.get_logger('DEMO', logger.INFO)
+_logger = logger.get_logger('DEMO', logger.DEBUG)
 
 # Imports
 _logger.info('Importing libraries\n')
@@ -12,6 +12,7 @@ import torch.utils.data as td
 
 import time
 import sys
+from sklearn.metrics import mean_absolute_error, mean_squared_error, root_mean_squared_error, mean_absolute_percentage_error
 
 import ae
 import datasets as ds
@@ -27,11 +28,13 @@ SEED = 42069
 TRAIN_SIZE = 0.8
 
 ## Model
+# INPUTS_SHAPE = (6, 100) # 2s @50Hz (6 channels data)
+# INPUTS_SHAPE = (6, 3000) # 2s @50Hz (6 channels data)
 INPUTS_SHAPE = (6, 100) # 2s @50Hz (6 channels data)
 EMBEDDING_CHANNELS = INPUTS_SHAPE[0]
 
 ## Dataset
-OVERLAP = 0.0
+OVERLAP = 0.5
 
 ## Training
 EPOCHS = 100
@@ -40,22 +43,23 @@ BATCH_SIZE = 64
 ## COMMAND LINE OVERRIDE
 if CMD_PARAM:
     # Model
-    EMBEDDING_CHANNELS = int(sys.argv[1])
+    INPUTS_SHAPE = (6, int(sys.argv[1]))
+    EMBEDDING_CHANNELS = int(sys.argv[2])
     
     # Training
-    EPOCHS = int(sys.argv[2])
-    BATCH_SIZE = int(sys.argv[3])
+    EPOCHS = int(sys.argv[3])
+    BATCH_SIZE = int(sys.argv[4])
     
     # General
-    SEED = int(sys.argv[4])
+    SEED = int(sys.argv[5])
 
 ## Paths
-MODEL_PATH = './models'
+MODEL_PATH = './models/Uci'
 MODEL_NAME = f'AutoEncoder_ws{INPUTS_SHAPE[1]}_ch{INPUTS_SHAPE[0]}_e{EPOCHS}_bs{BATCH_SIZE}_seed{SEED}'
 MODEL_FILENAME = f'{MODEL_PATH}/{MODEL_NAME}.pt'
 
-LOG_PATH = './log'
-LOG_NAME = f'sweep_ws{INPUTS_SHAPE[1]}_ch{INPUTS_SHAPE[0]}'
+LOG_PATH = './log/Uci'
+LOG_NAME = f'sweep_ws{INPUTS_SHAPE[1]}_ch{INPUTS_SHAPE[0]}_o{OVERLAP}'
 LOG_FILENAME = f'{LOG_PATH}/{LOG_NAME}.log'
 
 # Build directories
@@ -144,28 +148,20 @@ model = torch.load(MODEL_FILENAME, weights_only = False)
 eval_loss = utils.evaluate(model, test_loader, criterion, device)
 print(f'Eval: {eval_loss}')
 
+# Compute Metrics
+print(f'\n===== Metrics =====')
+y_pred, y_true = utils.predict(model, test_loader, device, True)
+_logger.debug(y_true.shape)
+_logger.debug(y_pred.shape)
+
+## Metrics to compute
+mae = mean_absolute_error(y_true, y_pred)
+mse = mean_squared_error(y_true, y_pred)
+rmse = root_mean_squared_error (y_true, y_pred)
+mape = mean_absolute_percentage_error(y_true, y_pred)
+
+
 # Log on file
 with open(LOG_FILENAME, 'a') as log:
-    line = f'AutoEncoder,{EMBEDDING_CHANNELS},{model.compression_ratio}:1,{SEED},{INPUTS_SHAPE[1]},{INPUTS_SHAPE[0]},{BATCH_SIZE},{EPOCHS},{eval_loss}\n'
+    line = f'AutoEncoder,{EMBEDDING_CHANNELS},{model.compression_ratio}:1,{SEED},{INPUTS_SHAPE[1]},{INPUTS_SHAPE[0]},{BATCH_SIZE},{EPOCHS},{mae},{mse},{rmse},{mape}\n'
     log.write(line)
-
-
-
-'''
-# Plot
-## Get one batch
-batch = next(iter(test_loader))
-x, _ = batch
-
-## Move to device
-x = x.to(device)
-
-## Perform inference
-model.eval()
-with torch.no_grad():
-    xp = model(x)
-
-## Generate plots
-# for i in range(x.size(0)):
-#     utils.plot_har(x.cpu()[i].T, xp.cpu()[i].T, f'plot-{i}')
-'''
