@@ -1,7 +1,7 @@
 # Logger
 import logger
 
-_logger = logger.get_logger('DEMO', logger.INFO)
+_logger = logger.get_logger('DEMO', logger.DEBUG)
 
 # Imports
 _logger.info('Importing libraries\n')
@@ -11,33 +11,63 @@ import torch.nn as nn
 import torch.utils.data as td
 
 import time
+import sys
+from sklearn.metrics import mean_absolute_error, mean_squared_error, root_mean_squared_error, mean_absolute_percentage_error
 
 import ae
+import datasets as ds
 import utils
 
 
 
 # Settings
+CMD_PARAM = True
+
 ## Globals
 SEED = 42069
 TRAIN_SIZE = 0.8
 
 ## Model
-# INPUTS_SHAPE = (3, 3000) # 1m @50Hz (3 channels data)
+# INPUTS_SHAPE = (6, 100) # 2s @50Hz (6 channels data)
+# INPUTS_SHAPE = (6, 3000) # 2s @50Hz (6 channels data)
 INPUTS_SHAPE = (6, 100) # 2s @50Hz (6 channels data)
-# INPUTS_SHAPE = (1, 300) # 25h of data @.0033Hz (1 channel data)
+
+EMBEDDING_CHANNELS = INPUTS_SHAPE[0]
+FILTERS = 8
 
 ## Dataset
-OVERLAP = 0.0
+OVERLAP = 0.5
 
 ## Training
-EPOCHS = 5
+EPOCHS = 100
 BATCH_SIZE = 64
 
+## COMMAND LINE OVERRIDE
+if CMD_PARAM:
+    # Model
+    INPUTS_SHAPE = (6, int(sys.argv[1]))
+    EMBEDDING_CHANNELS = int(sys.argv[2])
+    FILTERS = int(sys.argv[3])
+    
+    # Training
+    EPOCHS = int(sys.argv[4])
+    BATCH_SIZE = int(sys.argv[5])
+    
+    # General
+    SEED = int(sys.argv[6])
+
 ## Paths
-MODEL_PATH = f'models/AutoEncoder_e{EPOCHS}_bs{BATCH_SIZE}_seed{SEED}.pt'
+MODEL_PATH = './models/Uci'
+MODEL_NAME = f'AutoEncoder_f{FILTERS}_ws{INPUTS_SHAPE[1]}_ch{INPUTS_SHAPE[0]}_e{EPOCHS}_bs{BATCH_SIZE}_seed{SEED}'
+MODEL_FILENAME = f'{MODEL_PATH}/{MODEL_NAME}.pt'
 
+LOG_PATH = './log/Uci'
+LOG_NAME = f'sweep_ws{INPUTS_SHAPE[1]}_ch{INPUTS_SHAPE[0]}_o{OVERLAP}'
+LOG_FILENAME = f'{LOG_PATH}/{LOG_NAME}.log'
 
+# Build directories
+utils.build_directories(MODEL_PATH)
+utils.build_directories(LOG_PATH)
 
 # Set Determinism
 _logger.info('Setting seed for determinism\n')
@@ -52,8 +82,8 @@ utils.set_seed(SEED)
 # Dataset
 _logger.info('Loading dataset\n')
 
-dataset = utils.UciDataset(INPUTS_SHAPE[1], OVERLAP, )
-# dataset = utils.PeanoDataset(INPUTS_SHAPE[1], OVERLAP)
+dataset = ds.UciDataset(INPUTS_SHAPE[1], OVERLAP)
+# dataset = ds.PeanoDataset(INPUTS_SHAPE[1], OVERLAP)
 
 ## Train/Test Split
 train_size = int(TRAIN_SIZE * len(dataset))
@@ -75,7 +105,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 ## Model
 _logger.info('Creating model\n')
 
-model = ae.AutoEncoder(INPUTS_SHAPE[0]).to(device)
+model = ae.AutoEncoder(INPUTS_SHAPE[0], FILTERS, EMBEDDING_CHANNELS).to(device)
 
 ## Criterion
 # criterion = nn.L1Loss() # MAE
@@ -112,30 +142,27 @@ for i in range(EPOCHS):
 
 # Model files
 ## Save model
-torch.save(model, MODEL_PATH)
+torch.save(model, MODEL_FILENAME)
 
 ## Load model
-model = torch.load(MODEL_PATH, weights_only = False)
+model = torch.load(MODEL_FILENAME, weights_only = False)
 
 # Evaluate model
 eval_loss = utils.evaluate(model, test_loader, criterion, device)
 print(f'Eval: {eval_loss}')
 
+# Compute Metrics
+print(f'\n===== Metrics =====')
+y_pred, y_true = utils.predict(model, test_loader, device, True)
+_logger.debug(y_true.shape)
+_logger.debug(y_pred.shape)
 
+## Metrics to compute
+mae = mean_absolute_error(y_true, y_pred)
+mse = mean_squared_error(y_true, y_pred)
+rmse = root_mean_squared_error (y_true, y_pred)
 
-# Plot
-## Get one batch
-batch = next(iter(test_loader))
-x, _ = batch
-
-## Move to device
-x = x.to(device)
-
-## Perform inference
-model.eval()
-with torch.no_grad():
-    xp = model(x)
-
-## Generate plots
-# for i in range(x.size(0)):
-#     utils.plot_har(x.cpu()[i].T, xp.cpu()[i].T, f'plot-{i}')
+# Log on file
+with open(LOG_FILENAME, 'a') as log:
+    line = f'AutoEncoder,{FILTERS},{EMBEDDING_CHANNELS},{total_params},{model.compression_ratio}:1,{SEED},{INPUTS_SHAPE[1]},{INPUTS_SHAPE[0]},{BATCH_SIZE},{EPOCHS},{mae},{mse},{rmse}\n'
+    log.write(line)
