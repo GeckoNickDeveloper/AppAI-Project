@@ -22,7 +22,7 @@ def build_directories(path, verbose: bool = True):
         building += directory + '/'
 
         if verbose:
-            print(f'Building {building}')
+            _logger.info(f'Building {building}')
 
         if not os.path.exists(building):
             os.mkdir(building)
@@ -134,8 +134,8 @@ def predict(model, dataloader, device, show_progress = True):
         for inputs, labels in dataloader:
             inputs = inputs.to(device)
             output = model(inputs)
-            predictions.append(output.detach().cpu().numpy())
-            targets.append(inputs.detach().cpu().numpy())
+            predictions.append(output.cpu().numpy().transpose(0,2,1))
+            targets.append(labels.numpy().transpose(0,2,1))
 
             # Progress Bar
             if show_progress:
@@ -143,11 +143,14 @@ def predict(model, dataloader, device, show_progress = True):
             current_batch += 1
 
     # Stack all batches
-    predictions = np.concatenate(predictions, axis=0).reshape(-1)
-    targets = np.concatenate(targets, axis=0).reshape(-1)
+    predictions = np.concatenate(predictions, axis=0)
+    targets = np.concatenate(targets, axis=0)
 
     # Return (y_pred, y_true)
-    return (predictions, targets)
+    return (
+        predictions.reshape((predictions.shape[0], -1)),
+        targets.reshape((targets.shape[0], -1))
+    )
 
 # Determinism
 def set_seed(seed):

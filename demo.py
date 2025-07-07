@@ -31,7 +31,9 @@ TRAIN_SIZE = 0.8
 # INPUTS_SHAPE = (6, 100) # 2s @50Hz (6 channels data)
 # INPUTS_SHAPE = (6, 3000) # 2s @50Hz (6 channels data)
 INPUTS_SHAPE = (6, 100) # 2s @50Hz (6 channels data)
+
 EMBEDDING_CHANNELS = INPUTS_SHAPE[0]
+FILTERS = 8
 
 ## Dataset
 OVERLAP = 0.5
@@ -45,17 +47,18 @@ if CMD_PARAM:
     # Model
     INPUTS_SHAPE = (6, int(sys.argv[1]))
     EMBEDDING_CHANNELS = int(sys.argv[2])
+    FILTERS = int(sys.argv[3])
     
     # Training
-    EPOCHS = int(sys.argv[3])
-    BATCH_SIZE = int(sys.argv[4])
+    EPOCHS = int(sys.argv[4])
+    BATCH_SIZE = int(sys.argv[5])
     
     # General
-    SEED = int(sys.argv[5])
+    SEED = int(sys.argv[6])
 
 ## Paths
 MODEL_PATH = './models/Uci'
-MODEL_NAME = f'AutoEncoder_ws{INPUTS_SHAPE[1]}_ch{INPUTS_SHAPE[0]}_e{EPOCHS}_bs{BATCH_SIZE}_seed{SEED}'
+MODEL_NAME = f'AutoEncoder_f{FILTERS}_ws{INPUTS_SHAPE[1]}_ch{INPUTS_SHAPE[0]}_e{EPOCHS}_bs{BATCH_SIZE}_seed{SEED}'
 MODEL_FILENAME = f'{MODEL_PATH}/{MODEL_NAME}.pt'
 
 LOG_PATH = './log/Uci'
@@ -102,7 +105,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 ## Model
 _logger.info('Creating model\n')
 
-model = ae.AutoEncoder(INPUTS_SHAPE[0], EMBEDDING_CHANNELS).to(device)
+model = ae.AutoEncoder(INPUTS_SHAPE[0], FILTERS, EMBEDDING_CHANNELS).to(device)
 
 ## Criterion
 # criterion = nn.L1Loss() # MAE
@@ -158,10 +161,8 @@ _logger.debug(y_pred.shape)
 mae = mean_absolute_error(y_true, y_pred)
 mse = mean_squared_error(y_true, y_pred)
 rmse = root_mean_squared_error (y_true, y_pred)
-mape = mean_absolute_percentage_error(y_true, y_pred)
-
 
 # Log on file
 with open(LOG_FILENAME, 'a') as log:
-    line = f'AutoEncoder,{EMBEDDING_CHANNELS},{model.compression_ratio}:1,{SEED},{INPUTS_SHAPE[1]},{INPUTS_SHAPE[0]},{BATCH_SIZE},{EPOCHS},{mae},{mse},{rmse},{mape}\n'
+    line = f'AutoEncoder,{FILTERS},{EMBEDDING_CHANNELS},{total_params},{model.compression_ratio}:1,{SEED},{INPUTS_SHAPE[1]},{INPUTS_SHAPE[0]},{BATCH_SIZE},{EPOCHS},{mae},{mse},{rmse}\n'
     log.write(line)
