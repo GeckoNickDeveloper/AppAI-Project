@@ -12,7 +12,7 @@ import torch.utils.data as td
 
 import time
 import sys
-from sklearn.metrics import mean_absolute_error, mean_squared_error, root_mean_squared_error, mean_absolute_percentage_error
+from sklearn.metrics import mean_absolute_error, mean_squared_error, root_mean_squared_error
 
 import ae
 import datasets as ds
@@ -36,6 +36,7 @@ EMBEDDING_CHANNELS = INPUTS_SHAPE[0]
 FILTERS = 8
 
 ## Dataset
+DATASET_NAME = 'uci'
 OVERLAP = 0.5
 
 ## Training
@@ -55,13 +56,20 @@ if CMD_PARAM:
     
     # General
     SEED = int(sys.argv[6])
+    
+    # Dataset
+    DATASET_NAME = sys.argv[7]
+
+## Dataset override
+if DATASET_NAME.lower() not in ['uci', 'motionsense', 'wisdm']:
+    DATASET_NAME = 'uci'
 
 ## Paths
-MODEL_PATH = './models/Uci'
+MODEL_PATH = f'./models/{DATASET_NAME}'
 MODEL_NAME = f'AutoEncoder_f{FILTERS}_ws{INPUTS_SHAPE[1]}_ch{INPUTS_SHAPE[0]}_e{EPOCHS}_bs{BATCH_SIZE}_seed{SEED}'
 MODEL_FILENAME = f'{MODEL_PATH}/{MODEL_NAME}.pt'
 
-LOG_PATH = './log/Uci'
+LOG_PATH = f'./log/{DATASET_NAME}'
 LOG_NAME = f'sweep_ws{INPUTS_SHAPE[1]}_ch{INPUTS_SHAPE[0]}_o{OVERLAP}'
 LOG_FILENAME = f'{LOG_PATH}/{LOG_NAME}.log'
 
@@ -82,8 +90,14 @@ utils.set_seed(SEED)
 # Dataset
 _logger.info('Loading dataset\n')
 
-dataset = ds.UciDataset(INPUTS_SHAPE[1], OVERLAP)
-# dataset = ds.PeanoDataset(INPUTS_SHAPE[1], OVERLAP)
+if DATASET_NAME == 'uci':
+    dataset = ds.UciDataset(INPUTS_SHAPE[1], OVERLAP)
+elif DATASET_NAME == 'motionsense':
+    dataset = ds.MotionSenseDataset(INPUTS_SHAPE[1], OVERLAP)
+elif DATASET_NAME == 'wisdm':
+    dataset = ds.WISDMDataset(INPUTS_SHAPE[1], OVERLAP)
+else:
+    dataset = ds.UciDataset(INPUTS_SHAPE[1], OVERLAP)
 
 ## Train/Test Split
 train_size = int(TRAIN_SIZE * len(dataset))
