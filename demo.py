@@ -42,6 +42,7 @@ OVERLAP = 0.5
 ## Training
 EPOCHS = 100
 BATCH_SIZE = 64
+EARLY_STOP_PATIENCE = 10
 
 ## COMMAND LINE OVERRIDE
 if CMD_PARAM:
@@ -121,6 +122,10 @@ _logger.info('Creating model\n')
 
 model = ae.AutoEncoder(INPUTS_SHAPE[0], FILTERS, EMBEDDING_CHANNELS).to(device)
 
+## Best model
+best_model = ae.AutoEncoder(INPUTS_SHAPE[0], FILTERS, EMBEDDING_CHANNELS)
+
+
 ## Criterion
 # criterion = nn.L1Loss() # MAE
 criterion = nn.MSELoss() # MSE
@@ -142,7 +147,18 @@ _logger.info(f'Total parameters: {format(total_params, ",")}\n')
 # Train
 _logger.info('Train started\n')
 print('============ Train Started')
+
+## Counters
+patience_counter = 0
+best_loss = float('inf')
+
+## Training loop
 for i in range(EPOCHS):
+    # Early stopping
+    if patience_counter == EARLY_STOP_PATIENCE:
+        _logger.warning(f'Early Stopping: training ended in {i} epochs')
+        break
+
     print(f'Epoch [{i+1}/{EPOCHS}]')
     
     epoch_start_time = int(time.time() * 1000)
@@ -152,11 +168,20 @@ for i in range(EPOCHS):
     eval_loss = utils.evaluate(model, test_loader, criterion, device, show_progress = False)
     print(f'({epoch_end_time - epoch_start_time} ms) Train: {train_loss} - Eval: {eval_loss}\n')
 
+    # Save best model only
+    if eval_loss < best_loss:
+        # Reset patience counter
+        patience_counter = 0
+        # Save best
+        best_model.load_state_dict(model.state_dict())
+    else:
+        patience_counter += 1
+
 
 
 # Model files
 ## Save model
-torch.save(model, MODEL_FILENAME)
+torch.save(best_model, MODEL_FILENAME)
 
 ## Load model
 model = torch.load(MODEL_FILENAME, weights_only = False)
