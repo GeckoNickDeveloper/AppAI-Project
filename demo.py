@@ -37,12 +37,12 @@ FILTERS = 8
 
 ## Dataset
 DATASET_NAME = 'uci'
-OVERLAP = 0.5
+OVERLAP = 0.0
 
 ## Training
 EPOCHS = 100
 BATCH_SIZE = 64
-EARLY_STOP_PATIENCE = 10
+EARLY_STOP_PATIENCE = 5
 
 ## COMMAND LINE OVERRIDE
 if CMD_PARAM:
@@ -122,10 +122,6 @@ _logger.info('Creating model\n')
 
 model = ae.AutoEncoder(INPUTS_SHAPE[0], FILTERS, EMBEDDING_CHANNELS).to(device)
 
-## Best model
-best_model = ae.AutoEncoder(INPUTS_SHAPE[0], FILTERS, EMBEDDING_CHANNELS)
-
-
 ## Criterion
 # criterion = nn.L1Loss() # MAE
 criterion = nn.MSELoss() # MSE
@@ -172,17 +168,12 @@ for i in range(EPOCHS):
     if eval_loss < best_loss:
         # Reset patience counter
         patience_counter = 0
-        # Save best
-        best_model.load_state_dict(model.state_dict())
+        # Save best model
+        torch.save(model, MODEL_FILENAME)
     else:
         patience_counter += 1
 
-
-
 # Model files
-## Save model
-torch.save(best_model, MODEL_FILENAME)
-
 ## Load model
 model = torch.load(MODEL_FILENAME, weights_only = False)
 
