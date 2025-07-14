@@ -56,7 +56,7 @@ class Encoder(nn.Module):
 
         # Block 2
         ## AvgPool Head
-        self.layers['block-2']['avg-head']['pool'] = nn.AvgPool1d(3, stride = 2, padding = 0)
+        self.layers['block-2']['avg-head']['pool'] = nn.AvgPool1d(2, stride = 2, padding = 0)
         self.layers['block-2']['avg-head']['conv-1'] = nn.Conv1d(filters * 8, filters, 3, stride = 1)
         self.layers['block-2']['avg-head']['conv-2'] = nn.Conv1d(filters, filters * 2, 3, stride = 1)
 
@@ -66,7 +66,7 @@ class Encoder(nn.Module):
         self.layers['block-2']['lp-head']['conv-2'] = nn.Conv1d(filters, filters * 2, 3, stride = 1)
 
         ## MaxPool Head
-        self.layers['block-2']['max-head']['pool'] = nn.MaxPool1d(3, stride = 2, padding = 0)
+        self.layers['block-2']['max-head']['pool'] = nn.MaxPool1d(2, stride = 2, padding = 0)
         self.layers['block-2']['max-head']['conv-1'] = nn.Conv1d(filters * 8, filters, 3, stride = 1)
         self.layers['block-2']['max-head']['conv-2'] = nn.Conv1d(filters, filters * 2, 3, stride = 1)
 

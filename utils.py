@@ -169,80 +169,64 @@ def seed_worker(worker_id):
     random.seed(worker_seed)
 
 # Plotting
-def plot_har(x_true: np.ndarray, x_pred: np.ndarray, filename: str):
+def plot_acc_gyro(x_true: np.ndarray, x_pred: np.ndarray, filename: str):
     # Plot colors
     colors = [
         '#118ab2',
         '#ffd166',
         '#ef476f',
-        #'#acacac',
-        #'#06d6a0',
+        
+        '#2ba811',
+        '#ff7438',
+        '#661dff',
     ]
     
     
     
-    # True Acc
-    fig, ax = plt.subplots(1, figsize=(10, 8))
+    # Acc
+    fig, ax = plt.subplots(1, figsize=(15, 10))
     
-    ax.plot(x_true[:,0], color = colors[0], label = 'X')
-    ax.plot(x_true[:,1], color = colors[1], label = 'Y')
-    ax.plot(x_true[:,2], color = colors[2], label = 'Z')
+    ax.plot(x_true[:,0], linestyle = '--', color = colors[0], label = 'Original X')
+    ax.plot(x_pred[:,0], linestyle = '-', color = colors[3], label = 'Reconstruced X')
     
-    ax.set_title('True Acc')
+    ax.plot(x_true[:,1], linestyle = '--', color = colors[1], label = 'Original Y')
+    ax.plot(x_pred[:,1], linestyle = '-', color = colors[4], label = 'Reconstruced Y')
+    
+    ax.plot(x_true[:,2], linestyle = '--', color = colors[2], label = 'Original Z')
+    ax.plot(x_pred[:,2], linestyle = '-', color = colors[5], label = 'Reconstruced Z')
+    
+    
+    # ax.set_title('Accelerometer')
+    ax.tick_params(axis='both', which='major', labelsize=20)
+    ax.tick_params(axis='both', which='minor', labelsize=18)
     ax.grid()
-    ax.legend()
-    
+    ax.legend(fontsize = 18, loc = 'lower center', ncol = 3)
+
     fig.tight_layout()
-    plt.savefig(f'plots/{filename}-true-acc.png', format='png')
-    plt.savefig(f'plots/{filename}-true-acc.eps', format='eps')
+    plt.savefig(f'{filename}-acc.png', format='png')
+    plt.savefig(f'{filename}-acc.eps', format='eps')
+
+
+
+    # Gyro
+    fig, ax = plt.subplots(1, figsize=(15, 10))
+
+    ax.plot(x_true[:,3], linestyle = '--', color = colors[0], label = 'Original X')
+    ax.plot(x_pred[:,3], linestyle = '-', color = colors[3], label = 'Reconstructed X')
     
+    ax.plot(x_true[:,4], linestyle = '--', color = colors[1], label = 'Original Y')
+    ax.plot(x_pred[:,4], linestyle = '-', color = colors[4], label = 'Reconstructed Y')
     
+    ax.plot(x_true[:,5], linestyle = '--', color = colors[2], label = 'Original Z')
+    ax.plot(x_pred[:,5], linestyle = '-', color = colors[5], label = 'Reconstructed Z')
     
-    # True Gyro
-    fig, ax = plt.subplots(1, figsize=(10, 8))
-    
-    ax.plot(x_true[:,3], color = colors[0], label = 'X')
-    ax.plot(x_true[:,4], color = colors[1], label = 'Y')
-    ax.plot(x_true[:,5], color = colors[2], label = 'Z')
-    
-    ax.set_title('True Gyro')
+    # ax.set_title('Gyroscope')
+    ax.tick_params(axis='both', which='major', labelsize=20)
+    ax.tick_params(axis='both', which='minor', labelsize=18)
     ax.grid()
-    ax.legend()
+    ax.legend(fontsize = 18, loc = 'lower center', ncol = 3)
     
+    # Plots
     fig.tight_layout()
-    plt.savefig(f'plots/{filename}-true-gyro.png', format='png')
-    plt.savefig(f'plots/{filename}-true-gyro.eps', format='eps')
-    
-    
-    
-    # Pred Acc
-    fig, ax = plt.subplots(1, figsize=(10, 8))
-    
-    ax.plot(x_pred[:,0], color = colors[0], label = 'X')
-    ax.plot(x_pred[:,1], color = colors[1], label = 'Y')
-    ax.plot(x_pred[:,2], color = colors[2], label = 'Z')
-    
-    ax.set_title('Pred Acc')
-    ax.grid()
-    ax.legend()
-    
-    fig.tight_layout()
-    plt.savefig(f'plots/{filename}-pred-acc.png', format='png')
-    plt.savefig(f'plots/{filename}-pred-acc.eps', format='eps')
-    
-    
-    
-    # Pred Gyro
-    fig, ax = plt.subplots(1, figsize=(10, 8))
-    
-    ax.plot(x_pred[:,3], color = colors[0], label = 'X')
-    ax.plot(x_pred[:,4], color = colors[1], label = 'Y')
-    ax.plot(x_pred[:,5], color = colors[2], label = 'Z')
-    
-    ax.set_title('Pred Gyro')
-    ax.grid()
-    ax.legend()
-    
-    fig.tight_layout()
-    plt.savefig(f'plots/{filename}-pred-gyro.png', format='png')
-    plt.savefig(f'plots/{filename}-pred-gyro.eps', format='eps')
+    plt.savefig(f'{filename}-gyro.png', format='png')
+    plt.savefig(f'{filename}-gyro.eps', format='eps')
