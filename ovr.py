@@ -70,13 +70,13 @@ MODEL_PATH = f'./models/{DATASET_NAME}'
 MODEL_NAME = f'AutoEncoder_f{FILTERS}_ws{INPUTS_SHAPE[1]}_emb{EMBEDDING_CHANNELS}_e{EPOCHS}_bs{BATCH_SIZE}_seed{SEED}'
 MODEL_FILENAME = f'{MODEL_PATH}/{MODEL_NAME}.pt'
 
-LOG_PATH = f'./log/{DATASET_NAME}'
-LOG_NAME = f'sweep_ws{INPUTS_SHAPE[1]}_emb{EMBEDDING_CHANNELS}_o{OVERLAP}'
-LOG_FILENAME = f'{LOG_PATH}/{LOG_NAME}.log'
+PLOT_PATH = f'./plots/{DATASET_NAME}'
+PLOT_NAME = f'OvR_ws{INPUTS_SHAPE[1]}_emb{EMBEDDING_CHANNELS}_o{OVERLAP}'
+PLOT_FILENAME = f'{PLOT_PATH}/{PLOT_NAME}'
 
 # Build directories
-utils.build_directories(MODEL_PATH)
-utils.build_directories(LOG_PATH)
+# utils.build_directories(MODEL_PATH)
+utils.build_directories(PLOT_PATH)
 
 # Set Determinism
 _logger.info('Setting seed for determinism\n')
@@ -140,39 +140,6 @@ _logger.info(f'Total parameters: {format(total_params, ",")}\n')
 
 
 
-# Train
-_logger.info('Train started\n')
-print('============ Train Started')
-
-## Counters
-patience_counter = 0
-best_loss = float('inf')
-
-## Training loop
-for i in range(EPOCHS):
-    # Early stopping
-    if patience_counter == EARLY_STOP_PATIENCE:
-        _logger.warning(f'Early Stopping: training ended in {i} epochs')
-        break
-
-    print(f'Epoch [{i+1}/{EPOCHS}]')
-    
-    epoch_start_time = int(time.time() * 1000)
-    train_loss = utils.train(model, train_loader, criterion, optimizer, device, show_progress = True)
-    epoch_end_time = int(time.time() * 1000)
-    
-    eval_loss = utils.evaluate(model, test_loader, criterion, device, show_progress = False)
-    print(f'({epoch_end_time - epoch_start_time} ms) Train: {train_loss} - Eval: {eval_loss}\n')
-
-    # Save best model only
-    if eval_loss < best_loss:
-        # Reset patience counter
-        patience_counter = 0
-        # Save best model
-        torch.save(model, MODEL_FILENAME)
-    else:
-        patience_counter += 1
-
 # Model files
 ## Load model
 model = torch.load(MODEL_FILENAME, weights_only = False)
@@ -181,18 +148,15 @@ model = torch.load(MODEL_FILENAME, weights_only = False)
 eval_loss = utils.evaluate(model, test_loader, criterion, device)
 print(f'Eval: {eval_loss}')
 
-# Compute Metrics
+# Plot
 print(f'\n===== Metrics =====')
 y_pred, y_true = utils.predict(model, test_loader, device, True)
 _logger.debug(y_true.shape)
 _logger.debug(y_pred.shape)
 
-## Metrics to compute
-mae = mean_absolute_error(y_true, y_pred)
-mse = mean_squared_error(y_true, y_pred)
-rmse = root_mean_squared_error (y_true, y_pred)
+y_true = y_true.reshape(-1, 100, 6)
+y_pred = y_pred.reshape(-1, 100, 6)
 
-# Log on file
-with open(LOG_FILENAME, 'a') as log:
-    line = f'AutoEncoder,{FILTERS},{EMBEDDING_CHANNELS},{total_params},{model.compression_ratio}:1,{SEED},{INPUTS_SHAPE[1]},{INPUTS_SHAPE[0]},{BATCH_SIZE},{EPOCHS},{mae},{mse},{rmse}\n'
-    log.write(line)
+# Save plots
+idx = 376
+utils.plot_acc_gyro(y_true[idx], y_pred[idx], f'{PLOT_FILENAME}')
